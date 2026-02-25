@@ -1,0 +1,25 @@
+{
+	"name": "GyazoDumper",
+	"version": "1.1.0",
+	"manifest_version": 3,
+	"description": "Automatically saves newly created Gyazo Pictures into a Folder on your Hard Drive.",
+	"content_scripts": [
+		{
+			"matches": ["https://gyazo.com/*"],
+			"js": ["Content.js"],
+			"run_at": "document_idle"
+		}
+	],
+	"background": {
+		"service_worker": "background.js"
+	},
+	"action": {
+		"default_popup": "SettingsPopup.html"
+	},
+	"permissions": [
+		"activeTab",
+		"downloads",
+		"storage",
+		"nativeMessaging"
+	]
+}
