@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Application/Application.csproj" />
+  <Project Path="ChromeExtension/ChromeExtension.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
