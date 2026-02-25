@@ -76,7 +76,7 @@ public class ConfigurationService
         var picturesPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         return new AppConfig
         {
-            SaveDirectory = Path.Combine(picturesPath, "Gyazo"),
+            SaveDirectory = Path.Combine(picturesPath, "GyazoDumps"),
             FileNamePattern = "Gyazo_{timestamp}_{hash}{ext}"
         };
     }
