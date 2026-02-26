@@ -18,11 +18,8 @@
   <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest">
     <img src="https://img.shields.io/github/v/release/Glitzerflocken/GyazoDumper?style=flat-square&label=Version" alt="Latest Release">
   </a>
-  <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/ChromeExtension.zip">
-    <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension">
-  </a>
-  <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/ChromeExtension.zip">
-    <img src="https://img.shields.io/badge/Edge-Extension-0078D7?style=flat-square&logo=microsoftedge&logoColor=white" alt="Edge Extension">
+  <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/BrowserExtension.zip">
+    <img src="https://img.shields.io/badge/Browser-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Browser Extension">
   </a>
 </p>
 
@@ -98,7 +95,7 @@ Jede heruntergeladene Gyazo-ID wird in `chrome.storage.local` gespeichert. Beim 
 1. Repository klonen oder als ZIP herunterladen
 2. `chrome://extensions/` öffnen (Chrome) oder `edge://extensions/` (Edge)
 3. **Entwicklermodus** aktivieren (Schalter oben rechts)
-4. **Entpackte Erweiterung laden** → den `ChromeExtension`-Ordner auswählen
+4. **Entpackte Erweiterung laden** → den `BrowserExtension`-Ordner auswählen
 5. Fertig — die Extension erscheint in der Toolbar
 
 > Im **Browser-Modus** funktioniert alles sofort. Die Bilder werden im Download-Ordner unter einem konfigurierbaren Unterordner gespeichert (Standard: `GyazooDumper`).
@@ -199,7 +196,7 @@ Die ID-Liste ist möglicherweise zurückgesetzt worden. Bereits vorhandene Datei
 
 ```
 GyazoDumper/
-├── ChromeExtension/          Browser-Extension (Manifest V3)
+├── BrowserExtension/         Browser-Extension (Manifest V3)
 │   ├── manifest.json         Extension-Konfiguration
 │   ├── Content.js            Content Script (Gyazo-Seiten)
 │   ├── background.js         Background Service Worker

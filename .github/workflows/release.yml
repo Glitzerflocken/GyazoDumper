@@ -12,10 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Package ChromeExtension as ZIP
-        run: zip -r ChromeExtension.zip ChromeExtension/
+      - name: Package BrowserExtension as ZIP
+        run: zip -r BrowserExtension.zip BrowserExtension/
 
-      - name: Upload ChromeExtension.zip to release
+      - name: Upload BrowserExtension.zip to release
         uses: softprops/action-gh-release@v2
         with:
-          files: ChromeExtension.zip
+          files: BrowserExtension.zip
