@@ -22,34 +22,36 @@
 	  </div>
 
 	  <!-- Desktop App Status & Installation -->
-	  <div class="desktop-app-section" id="desktopAppSection" style="display: none;">
-		<div class="desktop-app-status">
-		  <span class="status-indicator" id="appStatusIndicator"></span>
-		  <span id="appStatusText">Status wird geprueft...</span>
-		</div>
-		<div style="margin-top: 8px;">
-		  <label style="font-size: 11px; color: #555;">Zielordner (vollstaendiger Pfad):</label>
-		  <input type="text" id="inputDesktopZielordner" placeholder="z.B. C:\Users\Name\Pictures\Gyazo">
-		</div>
-		<button class="btn-action" id="btnSaveDesktopPath" style="margin-top: 8px; background: #1a73e8;">Pfad speichern</button>
+		<div class="desktop-app-section" id="desktopAppSection" style="display: none;">
+		  <div class="desktop-app-status">
+			<span class="status-indicator" id="appStatusIndicator"></span>
+			<span id="appStatusText">Status wird geprueft...</span>
+		  </div>
+		  <div style="margin-top: 8px;">
+			<label style="font-size: 11px; color: #555;">Zielordner (vollstaendiger Pfad):</label>
+			<input type="text" id="inputDesktopZielordner" placeholder="z.B. C:\Users\Name\Pictures\Gyazo">
+		  </div>
+		  <button class="btn-action" id="btnSaveDesktopPath" style="margin-top: 8px; background: #1a73e8;">Pfad speichern</button>
 
-		<!-- Installation: wird nur angezeigt wenn App nicht verbunden -->
-		<div id="installSection" style="display: none;">
-		  <div class="install-steps">
-			<strong>So installierst du die Desktop-App:</strong>
-			<ol>
-			  <li>Klicke auf <em>Setup herunterladen</em></li>
-			  <li>Starte die heruntergeladene Datei</li>
-			  <li>Gib dort diese Extension-ID ein:</li>
-			</ol>
-		  </div>
-		  <div class="extension-id-box">
-			<code id="extensionId"></code>
-			<button class="btn-copy" id="btnCopyId">Kopieren</button>
-		  </div>
-		  <a class="btn-action" id="btnInstallApp" style="margin-top: 8px;" href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe">Setup herunterladen</a>
+		  <!-- Installation: klappbar, offen wenn nicht verbunden -->
+		  <details id="installDetails" class="install-details">
+			<summary class="install-summary">Desktop-App installieren</summary>
+			<div class="install-content">
+			  <div class="install-steps">
+				<ol>
+				  <li>Klicke auf <em>Setup herunterladen</em></li>
+				  <li>Starte die heruntergeladene Datei</li>
+				  <li>Gib dort diese Extension-ID ein:</li>
+				</ol>
+			  </div>
+			  <div class="extension-id-box">
+				<code id="extensionId"></code>
+				<button class="btn-copy" id="btnCopyId">Kopieren</button>
+			  </div>
+			  <button class="btn-action" id="btnInstallApp">Setup herunterladen</button>
+			</div>
+		  </details>
 		</div>
-	  </div>
 
 	  <!-- Browser Zielordner (nur wenn Desktop-App deaktiviert) -->
 	  <div id="browserZielordnerSection">

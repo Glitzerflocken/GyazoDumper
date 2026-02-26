@@ -5,11 +5,10 @@ namespace GyazoDumper;
 /// <summary>
 /// GyazoDumper - Native Messaging Host fuer Chrome Extension
 /// 
-/// Verwendung:
-///   GyazoDumper.exe                     Interaktiver Setup-Assistent (Doppelklick)
-///   GyazoDumper.exe --install [ID]      Stille Installation (optional mit Extension-ID)
-///   GyazoDumper.exe --uninstall         Entfernt die Installation
-///   GyazoDumper.exe chrome-extension:// Wird von Chrome/Edge als Native Host gestartet
+/// Erkennung des Startmodus:
+///   - Chrome/Edge leitet stdin um (Pipe) → Native Messaging Modus
+///   - Benutzer-Doppelklick: stdin ist Konsole → Interaktiver Setup
+///   - --install / --uninstall → Kommandozeilen-Modus
 /// </summary>
 public class Program
 {
@@ -17,14 +16,6 @@ public class Program
     {
         try
         {
-            // Chrome/Edge startet den Native Host mit "chrome-extension://ID/" als Argument
-            if (args.Any(a => a.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase)))
-            {
-                var host = new NativeMessagingHost();
-                await host.RunAsync();
-                return;
-            }
-
             if (args.Contains("--uninstall"))
             {
                 Console.WriteLine();
@@ -46,7 +37,6 @@ public class Program
 
             if (args.Contains("--install"))
             {
-                // Stille Installation mit optionaler Extension-ID
                 var idIndex = Array.IndexOf(args, "--install") + 1;
                 string? extensionId = (idIndex < args.Length && !args[idIndex].StartsWith("--"))
                     ? args[idIndex]
@@ -57,8 +47,19 @@ public class Program
                 return;
             }
 
-            // Standard: Interaktiver Setup-Assistent (Doppelklick auf EXE)
-            NativeHostInstaller.InteractiveInstall();
+            // Kernunterscheidung: Chrome leitet stdin als Pipe um,
+            // bei Doppelklick ist stdin die Konsole.
+            if (Console.IsInputRedirected)
+            {
+                // Chrome/Edge hat uns gestartet → Native Messaging Modus
+                var host = new NativeMessagingHost();
+                await host.RunAsync();
+            }
+            else
+            {
+                // Benutzer hat die EXE direkt gestartet → Setup
+                NativeHostInstaller.InteractiveInstall();
+            }
         }
         catch (Exception ex)
         {
@@ -82,7 +83,7 @@ public class Program
         Console.WriteLine("  GyazoDumper.exe --uninstall      Entfernt die Installation");
         Console.WriteLine("  GyazoDumper.exe --help           Zeigt diese Hilfe");
         Console.WriteLine();
-        Console.WriteLine("Setup: Starte die EXE per Doppelklick und folge den Anweisungen.");
-        Console.WriteLine("Die Extension-ID findest du im GyazoDumper Browser-Popup.");
+        Console.WriteLine("Wird automatisch von Chrome/Edge als Native Host gestartet");
+        Console.WriteLine("wenn stdin umgeleitet ist (Pipe).");
     }
 }

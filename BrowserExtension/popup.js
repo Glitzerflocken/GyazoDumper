@@ -35,7 +35,7 @@ const desktopAppSection = document.getElementById("desktopAppSection");
 const browserZielordnerSection = document.getElementById("browserZielordnerSection");
 const appStatusIndicator = document.getElementById("appStatusIndicator");
 const appStatusText = document.getElementById("appStatusText");
-const installSection = document.getElementById("installSection");
+const installDetails = document.getElementById("installDetails");
 const btnInstallApp = document.getElementById("btnInstallApp");
 const btnCopyId = document.getElementById("btnCopyId");
 const extensionIdEl = document.getElementById("extensionId");
@@ -144,7 +144,7 @@ async function toggleDesktopAppMode() {
 async function checkNativeHostStatus() {
     appStatusIndicator.className = "status-indicator checking";
     appStatusText.textContent = "Pruefe Verbindung...";
-    installSection.style.display = "none";
+    installDetails.removeAttribute("open");
 
     try {
         const response = await chrome.runtime.sendMessage({ action: "checkNativeHost" });
@@ -152,16 +152,16 @@ async function checkNativeHostStatus() {
         if (response.installed) {
             appStatusIndicator.className = "status-indicator connected";
             appStatusText.textContent = "Desktop-App verbunden";
-            installSection.style.display = "none";
+            installDetails.removeAttribute("open");
         } else {
             appStatusIndicator.className = "status-indicator disconnected";
             appStatusText.textContent = "Desktop-App nicht gefunden";
-            installSection.style.display = "block";
+            installDetails.setAttribute("open", "");
         }
     } catch (error) {
         appStatusIndicator.className = "status-indicator disconnected";
         appStatusText.textContent = "Verbindungsfehler";
-        installSection.style.display = "block";
+        installDetails.setAttribute("open", "");
     }
 }
 
@@ -169,7 +169,7 @@ function downloadSetup() {
     chrome.downloads.download({
         url: SETUP_DOWNLOAD_URL,
         filename: "GyazoDumper-Setup.exe",
-        saveAs: true
+        saveAs: false
     }, (downloadId) => {
         if (chrome.runtime.lastError) {
             showStatus("Download fehlgeschlagen!", true);

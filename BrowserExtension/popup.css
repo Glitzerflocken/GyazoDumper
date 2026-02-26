@@ -192,10 +192,48 @@ h2:first-child {
 }
 #btnInstallApp {
   background: #7c4dff;
-  margin-top: 8px;
+  margin-top: 12px;
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
 }
 #btnInstallApp:hover {
   background: #651fff;
+}
+
+/* Collapsible Install Section */
+.install-details {
+  margin-top: 10px;
+  border: 1px solid #d0d7ff;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.install-summary {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a73e8;
+  cursor: pointer;
+  background: #e8eeff;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.install-summary::before {
+  content: "▶";
+  font-size: 9px;
+  transition: transform .2s;
+}
+.install-details[open] > .install-summary::before {
+  transform: rotate(90deg);
+}
+.install-summary:hover {
+  background: #dce4ff;
+}
+.install-content {
+  padding: 10px;
 }
 .install-hint {
   font-size: 10px;
@@ -225,7 +263,7 @@ h2:first-child {
   border: 1px dashed #1a73e8;
   border-radius: 6px;
   padding: 8px 10px;
-  margin-top: 10px;
+  margin: 10px 0 0 0;
   display: flex;
   align-items: center;
   gap: 8px;
