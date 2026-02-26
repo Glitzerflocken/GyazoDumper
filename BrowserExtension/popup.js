@@ -12,7 +12,7 @@
  */
 
 // Standard-Zielordner (Unterordner im Chrome-Download-Verzeichnis)
-const DEFAULT_ZIELORDNER = "GyazooDumper";
+const DEFAULT_ZIELORDNER = "GyazoDumps";
 
 // GitHub Release URL fuer automatischen Download der Setup-Datei
 const SETUP_DOWNLOAD_URL = "https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe";
