@@ -41,6 +41,7 @@ const btnCopyId = document.getElementById("btnCopyId");
 const extensionIdEl = document.getElementById("extensionId");
 const inputDesktopZielordner = document.getElementById("inputDesktopZielordner");
 const btnSaveDesktopPath = document.getElementById("btnSaveDesktopPath");
+const btnBrowseFolder = document.getElementById("btnBrowseFolder");
 
 // ============================================================================
 //  Extension-ID anzeigen
@@ -153,6 +154,7 @@ async function checkNativeHostStatus() {
             appStatusIndicator.className = "status-indicator connected";
             appStatusText.textContent = "Desktop-App verbunden";
             installDetails.removeAttribute("open");
+            loadNativeConfig();
         } else {
             appStatusIndicator.className = "status-indicator disconnected";
             appStatusText.textContent = "Desktop-App nicht gefunden";
@@ -188,6 +190,41 @@ function copyExtensionId() {
             btnCopyId.classList.remove("copied");
         }, 2000);
     });
+}
+
+async function browseFolder() {
+    btnBrowseFolder.disabled = true;
+    btnBrowseFolder.textContent = "Bitte waehlen...";
+
+    try {
+        const response = await chrome.runtime.sendMessage({ action: "browseFolder" });
+
+        if (response.success) {
+            inputDesktopZielordner.value = response.message;
+            await chrome.storage.local.set({ desktopZielordner: response.message });
+            showStatus("Neuer Zielpfad gespeichert: " + response.message);
+        } else if (response.error !== "Abgebrochen") {
+            showStatus("Ordnerauswahl fehlgeschlagen.", true);
+        }
+    } catch (error) {
+        showStatus("Fehler bei Ordnerauswahl.", true);
+    }
+
+    btnBrowseFolder.disabled = false;
+    btnBrowseFolder.textContent = "Ordner waehlen...";
+}
+
+async function loadNativeConfig() {
+    try {
+        const response = await chrome.runtime.sendMessage({ action: "getNativeConfig" });
+
+        if (response.success && response.message) {
+            inputDesktopZielordner.value = response.message;
+            await chrome.storage.local.set({ desktopZielordner: response.message });
+        }
+    } catch (error) {
+        console.error("[GyazoDumper Popup] Config laden fehlgeschlagen:", error);
+    }
 }
 
 // ============================================================================
@@ -298,6 +335,7 @@ toggleDesktopApp.addEventListener("change", toggleDesktopAppMode);
 btnInstallApp.addEventListener("click", downloadSetup);
 btnCopyId.addEventListener("click", copyExtensionId);
 btnSaveDesktopPath.addEventListener("click", saveDesktopPath);
+btnBrowseFolder.addEventListener("click", browseFolder);
 inputDesktopZielordner.addEventListener("keydown", (e) => {
     if (e.key === "Enter") saveDesktopPath();
 });

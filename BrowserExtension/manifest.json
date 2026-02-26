@@ -25,5 +25,11 @@
 		"downloads",
 		"storage",
 		"nativeMessaging"
+	],
+	"web_accessible_resources": [
+		{
+			"resources": ["GyazoDumper.png"],
+			"matches": ["https://gyazo.com/*"]
+		}
 	]
 }

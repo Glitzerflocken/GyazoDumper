@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Windows.Forms;
 
 namespace GyazoDumper.Services;
 
@@ -154,6 +155,9 @@ public class NativeMessagingHost
                     Error = "Kein Pfad angegeben"
                 };
 
+            case "selectfolder":
+                return await HandleSelectFolderAsync();
+
             default:
                 return new NativeResponse
                 {
@@ -199,6 +203,47 @@ public class NativeMessagingHost
                 Error = $"Download fehlgeschlagen: {ex.Message}"
             };
         }
+    }
+
+    /// <summary>
+    /// Oeffnet einen Windows-Ordnerauswahl-Dialog und speichert den gewaehlten Pfad
+    /// </summary>
+    private Task<NativeResponse> HandleSelectFolderAsync()
+    {
+        return Task.Run(() =>
+        {
+            string? selectedPath = null;
+
+            var thread = new Thread(() =>
+            {
+                using var dialog = new FolderBrowserDialog
+                {
+                    Description = "Zielordner fuer GyazoDumper auswaehlen",
+                    UseDescriptionForTitle = true,
+                    ShowNewFolderButton = true
+                };
+
+                if (!string.IsNullOrEmpty(_config.SaveDirectory) && Directory.Exists(_config.SaveDirectory))
+                {
+                    dialog.InitialDirectory = _config.SaveDirectory;
+                }
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    selectedPath = dialog.SelectedPath;
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            if (selectedPath != null)
+            {
+                _config.UpdateSaveDirectory(selectedPath);
+                return new NativeResponse { Success = true, Message = selectedPath };
+            }
+            return new NativeResponse { Success = false, Error = "Abgebrochen" };
+        });
     }
 }
 

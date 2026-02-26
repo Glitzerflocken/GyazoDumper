@@ -15,6 +15,9 @@
 
     <!-- Application Icon -->
     <ApplicationIcon>GyazoDumper.ico</ApplicationIcon>
+
+    <!-- Windows Forms fuer FolderBrowserDialog -->
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
 </Project>

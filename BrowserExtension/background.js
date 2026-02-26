@@ -272,6 +272,64 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         return true;
     }
+
+    // Nachricht vom Popup: Konfiguration vom Native Host laden
+    if (message.action === "getNativeConfig") {
+        (async () => {
+            try {
+                const port = connectToNativeHost();
+                if (!port) {
+                    sendResponse({ success: false, error: "Native Host nicht verbunden" });
+                    return;
+                }
+
+                const handler = (response) => {
+                    port.onMessage.removeListener(handler);
+                    sendResponse(response);
+                };
+                port.onMessage.addListener(handler);
+                port.postMessage({ action: "getConfig" });
+
+                setTimeout(() => {
+                    port.onMessage.removeListener(handler);
+                    sendResponse({ success: false, error: "Timeout" });
+                }, 3000);
+            } catch (error) {
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+
+        return true;
+    }
+
+    // Nachricht vom Popup: Ordnerauswahl-Dialog ueber Native Host oeffnen
+    if (message.action === "browseFolder") {
+        (async () => {
+            try {
+                const port = connectToNativeHost();
+                if (!port) {
+                    sendResponse({ success: false, error: "Native Host nicht verbunden" });
+                    return;
+                }
+
+                const handler = (response) => {
+                    port.onMessage.removeListener(handler);
+                    sendResponse(response);
+                };
+                port.onMessage.addListener(handler);
+                port.postMessage({ action: "selectFolder" });
+
+                setTimeout(() => {
+                    port.onMessage.removeListener(handler);
+                    sendResponse({ success: false, error: "Timeout" });
+                }, 120000); // 2 Minuten - Benutzer braucht Zeit im Dialog
+            } catch (error) {
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+
+        return true;
+    }
 });
 
 // IDs beim Start laden

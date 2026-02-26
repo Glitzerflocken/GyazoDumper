@@ -46,7 +46,7 @@ public static class NativeHostInstaller
         Console.WriteLine();
 
         // Schritt 1: Dateien kopieren
-        Console.Write("  [1/3] Dateien installieren ...       ");
+        Console.Write("  [1/4] Dateien installieren ...       ");
         try
         {
             CopyToAppData();
@@ -59,8 +59,28 @@ public static class NativeHostInstaller
             return;
         }
 
-        // Schritt 2: Extension-ID abfragen
-        Console.WriteLine("  [2/3] Extension-ID registrieren");
+        // Schritt 2: Standard-Speicherpfad anzeigen und config erstellen
+        var defaultSavePath = EnsureConfigAndShortcut();
+
+        Console.WriteLine("  [2/4] Speicherort konfigurieren");
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"  Bilder werden gespeichert in:");
+        Console.WriteLine($"  {defaultSavePath}");
+        Console.ResetColor();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("  (Kann spaeter in der Browser-Extension geaendert werden)");
+        Console.ResetColor();
+        Console.WriteLine();
+
+        // 10-Sekunden Auto-Continue
+        Console.Write("  Weiter in 10 Sek (oder beliebige Taste druecken)...");
+        WaitWithTimeout(10);
+        Console.WriteLine();
+        Console.WriteLine();
+
+        // Schritt 3: Extension-ID abfragen
+        Console.WriteLine("  [3/4] Extension-ID registrieren");
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine("  Oeffne die GyazoDumper Chrome-Extension und kopiere");
@@ -92,8 +112,8 @@ public static class NativeHostInstaller
             extensionId = extensionId.Replace("chrome-extension://", "").TrimEnd('/');
         }
 
-        // Schritt 3: Manifest + Registry erstellen
-        Console.Write("  [3/3] Registry-Eintraege erstellen ...");
+        // Schritt 4: Manifest + Registry erstellen
+        Console.Write("  [4/4] Registry-Eintraege erstellen ...");
         try
         {
             CreateManifest(extensionId, existingOrigins);
@@ -129,6 +149,7 @@ public static class NativeHostInstaller
     public static void Install(string? extensionId = null)
     {
         CopyToAppData();
+        EnsureConfigAndShortcut();
         var existingOrigins = LoadExistingOrigins();
         CreateManifest(extensionId, existingOrigins);
         RegisterInRegistry(ChromeRegistryPath, ManifestPath);
@@ -169,7 +190,35 @@ public static class NativeHostInstaller
     }
 
     /// <summary>
+    /// Erstellt Config und Ordnerverknuepfung falls nicht vorhanden
+    /// </summary>
+    private static string EnsureConfigAndShortcut()
+    {
+        var picturesPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+        var defaultSavePath = Path.Combine(picturesPath, "GyazoDumps");
+
+        Directory.CreateDirectory(defaultSavePath);
+
+        var configPath = Path.Combine(AppDataDir, "config.json");
+        if (!File.Exists(configPath))
+        {
+            var configJson = JsonSerializer.Serialize(new
+            {
+                SaveDirectory = defaultSavePath,
+                FileNamePattern = "Gyazo_{timestamp}_{hash}{ext}"
+            }, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(configPath, configJson);
+        }
+
+        try { CreateFolderShortcut(defaultSavePath); } catch { }
+
+        return defaultSavePath;
+    }
+
+    /// <summary>
     /// Kopiert die aktuelle EXE nach %APPDATA%\GyazoDumper\
+    /// Falls die Zieldatei gesperrt ist (Chrome nutzt den Native Host),
+    /// wird die alte Datei umbenannt und dann die neue kopiert.
     /// </summary>
     private static void CopyToAppData()
     {
@@ -182,9 +231,20 @@ public static class NativeHostInstaller
         var normalizedCurrent = Path.GetFullPath(currentExe).ToLowerInvariant();
         var normalizedTarget = Path.GetFullPath(InstalledExePath).ToLowerInvariant();
 
-        if (normalizedCurrent != normalizedTarget)
+        if (normalizedCurrent == normalizedTarget) return;
+
+        try
         {
             File.Copy(currentExe, InstalledExePath, overwrite: true);
+        }
+        catch (IOException)
+        {
+            // Datei ist gesperrt (Chrome Native Host laeuft) -
+            // alte Datei umbenennen, dann neue kopieren
+            var backupPath = InstalledExePath + ".old";
+            try { File.Delete(backupPath); } catch { }
+            File.Move(InstalledExePath, backupPath);
+            File.Copy(currentExe, InstalledExePath);
         }
     }
 
@@ -276,6 +336,47 @@ public static class NativeHostInstaller
     {
         Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
         Console.ReadKey(true);
+    }
+
+    /// <summary>
+    /// Wartet die angegebene Anzahl Sekunden oder bis eine Taste gedrueckt wird
+    /// </summary>
+    private static void WaitWithTimeout(int seconds)
+    {
+        for (int i = seconds; i > 0; i--)
+        {
+            if (Console.KeyAvailable)
+            {
+                Console.ReadKey(true);
+                return;
+            }
+            Thread.Sleep(1000);
+        }
+    }
+
+    /// <summary>
+    /// Erstellt eine Ordnerverknuepfung (Junction) im AppData-Ordner
+    /// zum Zielordner der gespeicherten Bilder
+    /// </summary>
+    private static void CreateFolderShortcut(string targetPath)
+    {
+        var linkPath = Path.Combine(AppDataDir, "Gespeicherte Bilder");
+
+        // Bestehenden Link/Ordner nicht ueberschreiben
+        if (Directory.Exists(linkPath)) return;
+
+        // Junction erstellen (benoetigt keine Admin-Rechte)
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/c mklink /J \"{linkPath}\" \"{targetPath}\"",
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        var process = System.Diagnostics.Process.Start(psi);
+        process?.WaitForExit(5000);
     }
 }
 
