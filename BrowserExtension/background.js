@@ -330,6 +330,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         return true;
     }
+
+    // Nachricht vom Popup: Speicherordner im Windows Explorer oeffnen
+    if (message.action === "openFolder") {
+        (async () => {
+            try {
+                const port = connectToNativeHost();
+                if (!port) {
+                    sendResponse({ success: false, error: "Native Host nicht verbunden" });
+                    return;
+                }
+
+                const handler = (response) => {
+                    port.onMessage.removeListener(handler);
+                    sendResponse(response);
+                };
+                port.onMessage.addListener(handler);
+                port.postMessage({ action: "openFolder" });
+
+                setTimeout(() => {
+                    port.onMessage.removeListener(handler);
+                    sendResponse({ success: false, error: "Timeout" });
+                }, 5000);
+            } catch (error) {
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+
+        return true;
+    }
 });
 
 // IDs beim Start laden

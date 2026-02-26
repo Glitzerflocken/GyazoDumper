@@ -40,6 +40,7 @@ const btnCopyId = document.getElementById("btnCopyId");
 const extensionIdEl = document.getElementById("extensionId");
 const inputDesktopZielordner = document.getElementById("inputDesktopZielordner");
 const btnBrowseFolder = document.getElementById("btnBrowseFolder");
+const btnOpenFolder = document.getElementById("btnOpenFolder");
 
 // ============================================================================
 //  Extension-ID anzeigen
@@ -193,6 +194,18 @@ async function browseFolder() {
     btnBrowseFolder.textContent = "Ordner waehlen...";
 }
 
+async function openFolder() {
+    try {
+        const response = await chrome.runtime.sendMessage({ action: "openFolder" });
+
+        if (!response.success) {
+            showStatus("Ordner konnte nicht geoeffnet werden.", true);
+        }
+    } catch (error) {
+        showStatus("Fehler beim Oeffnen.", true);
+    }
+}
+
 async function loadNativeConfig() {
     try {
         const response = await chrome.runtime.sendMessage({ action: "getNativeConfig" });
@@ -313,6 +326,7 @@ toggleDesktopApp.addEventListener("change", toggleDesktopAppMode);
 btnInstallApp.addEventListener("click", downloadSetup);
 btnCopyId.addEventListener("click", copyExtensionId);
 btnBrowseFolder.addEventListener("click", browseFolder);
+btnOpenFolder.addEventListener("click", openFolder);
 
 // Beim Oeffnen des Popups: Einstellungen und ID-Zaehler laden
 loadSettings();

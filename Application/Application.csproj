@@ -18,6 +18,9 @@
     <TrimMode>partial</TrimMode>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 
+    <!-- COM Interop fuer FolderPicker (IFileOpenDialog) bei Trimming beibehalten -->
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+
     <!-- Application Icon -->
     <ApplicationIcon>GyazoDumper.ico</ApplicationIcon>
   </PropertyGroup>

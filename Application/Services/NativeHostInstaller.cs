@@ -202,32 +202,50 @@ public static class NativeHostInstaller
         Console.Write("  • Chrome Web Store: ");
         Console.ResetColor();
         Console.WriteLine(WebStoreUrl);
+        Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write("  • Oder manuell laden aus: ");
-        Console.WriteLine(Path.Combine(AppDataDir, ExtensionFolderName));
+        Console.WriteLine("  • Oder manuell ueber den Entwicklermodus:");
+        Console.WriteLine("    1. Oeffne chrome://extensions/ (oder edge://extensions/)");
+        Console.WriteLine("    2. Aktiviere den Entwicklermodus (Schalter oben rechts)");
+        Console.WriteLine("    3. Klicke 'Entpackte Erweiterung laden'");
+        Console.WriteLine($"    4. Waehle diesen Ordner: {Path.Combine(AppDataDir, ExtensionFolderName)}");
         Console.ResetColor();
         Console.WriteLine();
 
-        // Ordner und Web Store oeffnen
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = WebStoreUrl,
-                UseShellExecute = true
-            });
-        }
-        catch { }
+        // Optionale Aktionen - beide abfragen, dann ausfuehren
+        Console.Write("  Chrome Web Store im Browser oeffnen? (j/n): ");
+        var openStore = Console.ReadLine()?.Trim().ToLower() == "j";
 
-        try
+        Console.Write("  Installationsordner im Explorer oeffnen? (j/n): ");
+        var openFolder = Console.ReadLine()?.Trim().ToLower() == "j";
+
+        Console.WriteLine();
+
+        if (openStore)
         {
-            Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = "explorer.exe",
-                Arguments = AppDataDir
-            });
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = WebStoreUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch { }
         }
-        catch { }
+
+        if (openFolder)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = AppDataDir
+                });
+            }
+            catch { }
+        }
 
         WaitAndExit();
     }

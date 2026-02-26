@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -151,6 +152,9 @@ public class NativeMessagingHost
             case "selectfolder":
                 return await HandleSelectFolderAsync();
 
+            case "openfolder":
+                return HandleOpenFolder();
+
             default:
                 return new NativeResponse
                 {
@@ -214,6 +218,32 @@ public class NativeMessagingHost
             }
             return new NativeResponse { Success = false, Error = "Abgebrochen" };
         });
+    }
+
+    /// <summary>
+    /// Oeffnet den aktuellen Speicherordner im Windows Explorer
+    /// </summary>
+    private NativeResponse HandleOpenFolder()
+    {
+        var path = _config.SaveDirectory;
+        if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
+        {
+            return new NativeResponse { Success = false, Error = "Ordner existiert nicht" };
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = path
+            });
+            return new NativeResponse { Success = true, Message = path };
+        }
+        catch (Exception ex)
+        {
+            return new NativeResponse { Success = false, Error = ex.Message };
+        }
     }
 }
 

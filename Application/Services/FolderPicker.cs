@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace GyazoDumper.Services;
@@ -21,6 +22,12 @@ internal static class FolderPicker
     // ========================================================================
     //  Win32 API
     // ========================================================================
+
+    [DllImport("ole32.dll")]
+    private static extern int OleInitialize(IntPtr pvReserved);
+
+    [DllImport("ole32.dll")]
+    private static extern void OleUninitialize();
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
@@ -67,12 +74,16 @@ internal static class FolderPicker
     /// Gibt den gewaehlten Pfad zurueck, oder null wenn abgebrochen.
     /// Laeuft auf einem eigenen STA-Thread (COM-Anforderung).
     /// </summary>
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FileOpenDialogClass))]
     public static string? ShowDialog(string? initialFolder = null)
     {
         string? selectedPath = null;
+        Exception? threadError = null;
 
         var thread = new Thread(() =>
         {
+            // OLE/COM explizit initialisieren (noetig fuer STA-Thread ohne WinForms)
+            OleInitialize(IntPtr.Zero);
             try
             {
                 var dialog = (IFileOpenDialog)new FileOpenDialogClass();
@@ -114,11 +125,31 @@ internal static class FolderPicker
                 DestroyWindow(ownerHwnd);
                 Marshal.ReleaseComObject(dialog);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                threadError = ex;
+            }
+            finally
+            {
+                OleUninitialize();
+            }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
+
+        // Fehler loggen falls vorhanden
+        if (threadError != null)
+        {
+            try
+            {
+                var logPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "GyazoDumper", "error.log");
+                File.AppendAllText(logPath, $"{DateTime.Now}: FolderPicker: {threadError}\n");
+            }
+            catch { }
+        }
 
         return selectedPath;
     }
