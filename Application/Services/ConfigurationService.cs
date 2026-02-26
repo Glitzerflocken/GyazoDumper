@@ -33,12 +33,20 @@ public class ConfigurationService
     public string FileNamePattern => _config.FileNamePattern;
 
     /// <summary>
-    /// Aktualisiert das Speicherverzeichnis
+    /// Aktualisiert das Speicherverzeichnis und die Ordnerverknuepfung in AppData
     /// </summary>
     public void UpdateSaveDirectory(string newPath)
     {
         _config.SaveDirectory = newPath;
         SaveConfig(_config);
+
+        // Zielordner erstellen und Junction aktualisieren
+        try
+        {
+            Directory.CreateDirectory(newPath);
+            NativeHostInstaller.UpdateFolderShortcut(newPath);
+        }
+        catch { /* Nicht kritisch */ }
     }
 
     /// <summary>

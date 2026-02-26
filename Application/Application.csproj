@@ -20,7 +20,7 @@
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
-  <!-- Browser-Extension Dateien als eingebettete Ressourcen -->
+  <!-- Browser-Extension Dateien als Embedded Resources einbetten -->
   <ItemGroup>
     <EmbeddedResource Include="..\BrowserExtension\manifest.json" LogicalName="BrowserExtension.manifest.json" />
     <EmbeddedResource Include="..\BrowserExtension\Content.js" LogicalName="BrowserExtension.Content.js" />

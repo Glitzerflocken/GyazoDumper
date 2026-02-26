@@ -34,7 +34,7 @@ public static class NativeHostInstaller
 
     /// <summary>
     /// Interaktiver Setup-Assistent - wird bei Doppelklick auf die EXE ausgefuehrt.
-    /// Fuehrt den Benutzer durch die Installation in 5 Schritten.
+    /// Fuehrt den Benutzer durch die Installation in 3 einfachen Schritten.
     /// </summary>
     public static void InteractiveInstall()
     {
@@ -48,7 +48,7 @@ public static class NativeHostInstaller
         Console.WriteLine();
 
         // Schritt 1: Dateien kopieren
-        Console.Write("  [1/5] Dateien installieren ...       ");
+        Console.Write("  [1/4] Dateien installieren ...       ");
         try
         {
             CopyToAppData();
@@ -64,7 +64,7 @@ public static class NativeHostInstaller
         // Schritt 2: Standard-Speicherpfad anzeigen und config erstellen
         var defaultSavePath = EnsureConfigAndShortcut();
 
-        Console.WriteLine("  [2/5] Speicherort konfigurieren");
+        Console.WriteLine("  [2/4] Speicherort konfigurieren");
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"  Bilder werden gespeichert in:");
@@ -81,65 +81,12 @@ public static class NativeHostInstaller
         Console.WriteLine();
         Console.WriteLine();
 
-        // Schritt 3: Browser-Extension extrahieren (optional)
-        Console.WriteLine("  [3/5] Browser-Extension installieren");
-        Console.WriteLine();
-
-        var extensionDir = Path.Combine(AppDataDir, ExtensionFolderName);
-        var extensionAlreadyInstalled = Directory.Exists(extensionDir)
-            && File.Exists(Path.Combine(extensionDir, "manifest.json"));
-
-        if (extensionAlreadyInstalled)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine($"  Extension bereits vorhanden in:");
-            Console.WriteLine($"  {extensionDir}");
-            Console.ResetColor();
-            Console.WriteLine();
-            Console.Write("  Erneut extrahieren? (j/N): ");
-            var overwrite = Console.ReadLine()?.Trim().ToLower();
-            if (overwrite == "j" || overwrite == "y")
-            {
-                ExtractBrowserExtension(extensionDir);
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("  Extension aktualisiert!");
-                Console.ResetColor();
-            }
-        }
-        else
-        {
-            Console.WriteLine("  Die Browser-Extension kann gleich mitinstalliert werden.");
-            Console.WriteLine("  Sie wird dann im Chrome/Edge als 'entpackte Extension' geladen.");
-            Console.WriteLine();
-            Console.Write("  Browser-Extension installieren? (J/n): ");
-            var install = Console.ReadLine()?.Trim().ToLower();
-            if (install != "n")
-            {
-                ExtractBrowserExtension(extensionDir);
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"  Extension extrahiert nach:");
-                Console.WriteLine($"  {extensionDir}");
-                Console.ResetColor();
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine("  -> Uebersprungen. Lade die Extension separat von GitHub.");
-                Console.ResetColor();
-            }
-        }
-        Console.WriteLine();
-
-        // Schritt 4: Extension-ID abfragen
-        Console.WriteLine("  [4/5] Extension-ID registrieren");
+        // Schritt 3: Extension-ID abfragen
+        Console.WriteLine("  [3/4] Extension-ID registrieren");
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine("  Lade die Extension in Chrome/Edge:");
-        Console.WriteLine("  1. Oeffne chrome://extensions (oder edge://extensions)");
-        Console.WriteLine("  2. Aktiviere 'Entwicklermodus' (oben rechts)");
-        Console.WriteLine("  3. Klicke 'Entpackte Erweiterung laden'");
-        Console.WriteLine($"  4. Waehle den Ordner: {extensionDir}");
-        Console.WriteLine("  5. Kopiere die angezeigte Extension-ID");
+        Console.WriteLine("  Oeffne die GyazoDumper Chrome-Extension und kopiere");
+        Console.WriteLine("  die dort angezeigte Extension-ID.");
         Console.ResetColor();
         Console.WriteLine();
 
@@ -167,8 +114,8 @@ public static class NativeHostInstaller
             extensionId = extensionId.Replace("chrome-extension://", "").TrimEnd('/');
         }
 
-        // Schritt 5: Manifest + Registry erstellen
-        Console.Write("  [5/5] Registry-Eintraege erstellen ...");
+        // Schritt 4: Manifest + Registry erstellen
+        Console.Write("  [4/4] Registry-Eintraege erstellen ...");
         try
         {
             CreateManifest(extensionId, existingOrigins);
@@ -188,38 +135,33 @@ public static class NativeHostInstaller
         Console.WriteLine("  Installation abgeschlossen!");
         Console.ResetColor();
         Console.WriteLine();
-        Console.WriteLine("  Naechste Schritte:");
-        Console.WriteLine("  1. Starte Chrome / Edge neu");
-        Console.WriteLine("  2. Oeffne die GyazoDumper Extension");
-        Console.WriteLine("  3. Aktiviere 'Desktop-App verwenden'");
+
+        // Browser-Extension extrahieren
+        var extensionDir = Path.Combine(AppDataDir, ExtensionFolderName);
+        try
+        {
+            ExtractBrowserExtension(extensionDir);
+            Console.WriteLine("  Browser-Extension extrahiert nach:");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"  {extensionDir}");
+            Console.ResetColor();
+            Console.WriteLine();
+            Console.WriteLine("  Falls die Extension noch nicht installiert ist:");
+            Console.WriteLine("  1. Oeffne chrome://extensions/ (oder edge://extensions/)");
+            Console.WriteLine("  2. Aktiviere den Entwicklermodus");
+            Console.WriteLine("  3. Klicke 'Entpackte Erweiterung laden'");
+            Console.WriteLine($"  4. Waehle den Ordner oben aus");
+        }
+        catch
+        {
+            Console.WriteLine("  Naechste Schritte:");
+            Console.WriteLine("  1. Starte Chrome / Edge neu");
+            Console.WriteLine("  2. Oeffne die GyazoDumper Extension");
+            Console.WriteLine("  3. Aktiviere 'Desktop-App verwenden'");
+        }
+
         Console.WriteLine();
         WaitAndExit();
-    }
-
-    /// <summary>
-    /// Extrahiert die eingebetteten Browser-Extension Dateien in den Zielordner.
-    /// Die Dateien sind als EmbeddedResources in der EXE enthalten.
-    /// </summary>
-    private static void ExtractBrowserExtension(string targetDir)
-    {
-        Directory.CreateDirectory(targetDir);
-
-        var assembly = Assembly.GetExecutingAssembly();
-        var resourcePrefix = "BrowserExtension.";
-
-        foreach (var resourceName in assembly.GetManifestResourceNames())
-        {
-            if (!resourceName.StartsWith(resourcePrefix)) continue;
-
-            var fileName = resourceName[resourcePrefix.Length..];
-            var targetPath = Path.Combine(targetDir, fileName);
-
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            if (stream == null) continue;
-
-            using var fileStream = File.Create(targetPath);
-            stream.CopyTo(fileStream);
-        }
     }
 
     /// <summary>
@@ -230,11 +172,11 @@ public static class NativeHostInstaller
     {
         CopyToAppData();
         EnsureConfigAndShortcut();
-        ExtractBrowserExtension(Path.Combine(AppDataDir, ExtensionFolderName));
         var existingOrigins = LoadExistingOrigins();
         CreateManifest(extensionId, existingOrigins);
         RegisterInRegistry(ChromeRegistryPath, ManifestPath);
         RegisterInRegistry(EdgeRegistryPath, ManifestPath);
+        try { ExtractBrowserExtension(Path.Combine(AppDataDir, ExtensionFolderName)); } catch { }
     }
 
     /// <summary>
@@ -436,31 +378,22 @@ public static class NativeHostInstaller
     }
 
     /// <summary>
-    /// Erstellt oder aktualisiert die Ordnerverknuepfung (Junction) im AppData-Ordner.
-    /// Wird bei Installation und bei Ordnerwechsel ueber die Extension aufgerufen.
+    /// Erstellt oder aktualisiert die Ordnerverknuepfung (Junction) im AppData-Ordner
+    /// zum Zielordner der gespeicherten Bilder.
+    /// Wird bei Installation und bei jedem Ordnerwechsel aufgerufen.
     /// </summary>
     public static void UpdateFolderShortcut(string targetPath)
     {
         var linkPath = Path.Combine(AppDataDir, "Gespeicherte Bilder");
 
-        // Zielordner erstellen falls nicht vorhanden
-        Directory.CreateDirectory(targetPath);
-
-        // Bestehende Junction entfernen (nur wenn es ein Junction/Symlink ist)
+        // Bestehende Junction entfernen (Directory.Delete entfernt Junctions ohne den Inhalt zu loeschen)
         if (Directory.Exists(linkPath))
         {
-            var info = new DirectoryInfo(linkPath);
-            if (info.Attributes.HasFlag(FileAttributes.ReparsePoint))
-            {
-                // Junction loeschen (nicht den Zielordner!)
-                info.Delete();
-            }
-            else
-            {
-                // Normaler Ordner - nicht anfassen
-                return;
-            }
+            try { Directory.Delete(linkPath, false); } catch { }
         }
+
+        // Zielordner erstellen falls nicht vorhanden
+        try { Directory.CreateDirectory(targetPath); } catch { }
 
         // Neue Junction erstellen (benoetigt keine Admin-Rechte)
         var psi = new System.Diagnostics.ProcessStartInfo
@@ -474,6 +407,32 @@ public static class NativeHostInstaller
         };
         var process = System.Diagnostics.Process.Start(psi);
         process?.WaitForExit(5000);
+    }
+
+    /// <summary>
+    /// Extrahiert die eingebetteten Browser-Extension-Dateien nach dem angegebenen Ordner.
+    /// Ueberschreibt bestehende Dateien um Updates zu ermoeglichen.
+    /// </summary>
+    private static void ExtractBrowserExtension(string targetDir)
+    {
+        Directory.CreateDirectory(targetDir);
+
+        var assembly = Assembly.GetExecutingAssembly();
+        var prefix = "BrowserExtension.";
+
+        foreach (var resourceName in assembly.GetManifestResourceNames())
+        {
+            if (!resourceName.StartsWith(prefix)) continue;
+
+            var fileName = resourceName[prefix.Length..];
+            var targetPath = Path.Combine(targetDir, fileName);
+
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null) continue;
+
+            using var fileStream = File.Create(targetPath);
+            stream.CopyTo(fileStream);
+        }
     }
 }
 
