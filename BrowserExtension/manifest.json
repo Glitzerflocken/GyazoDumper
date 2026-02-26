@@ -1,6 +1,6 @@
 {
 	"name": "GyazoDumper",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"manifest_version": 3,
 	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9RW7GOX73Ydwmr0s8WjxZiDsnvOEy4AQ/NhkAJ8uz0AD8ArnvNupQa1oOVuVQZROtXEUEwCQWta1spA9+31pRwRpsUPpnYiyjEluQKs0hKZMvHj+T6gV0WdH07m5IveHGggu53wBdPvHUwZw4Xf5QibcuXGtgEPm9Rf/EZmuhmLFFAc/4OPvbzZQJTbLee+pMxhHvNLz0mBvVtfBo6VSW0jE8c5cqVyo/RaCv0pCzTwSKHMPucPKkqzrNmEWU/t0wfojspwjtoGB1ZpwZKt1KD3hktmNoN7uuxc/Ly1tTF841Ah/jnd12pGD7RDsKT65dj2P5Q4jvKcxCrGCpkWcYQIDAQAB",
 	"description": "Automatically saves newly created Gyazo Pictures into a Folder on your Hard Drive.",
