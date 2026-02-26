@@ -90,7 +90,7 @@ Die Setup-Datei installiert alles automatisch nach `%APPDATA%\GyazoDumper\`:
 | Datei | Beschreibung |
 |---|---|
 | `GyazoDumper.exe` | Native Messaging Host |
-| `gyazodumper.nativeApp.json` | Native Messaging Manifest |
+| `gyazodumper.nativeapp.json` | Native Messaging Manifest |
 | `config.json` | Konfiguration (Speicherpfad etc.) |
 
 

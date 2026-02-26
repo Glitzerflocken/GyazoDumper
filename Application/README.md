@@ -26,7 +26,7 @@ Lade die GyazoDumper Extension in Chrome oder Edge.
 
 Die Setup-Datei installiert alles automatisch nach `%APPDATA%\GyazoDumper\`:
 - `GyazoDumper.exe` — Native Messaging Host
-- `gyazodumper.nativeApp.json` — Native Messaging Manifest
+- `gyazodumper.nativeapp.json` — Native Messaging Manifest
 - `config.json` — Konfiguration (Speicherpfad etc.)
 
 ### 3. Desktop-App Modus aktivieren

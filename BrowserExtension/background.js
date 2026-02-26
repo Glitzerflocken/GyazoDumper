@@ -15,7 +15,7 @@
 
 // Standard-Zielordner (Unterordner im Chrome-Download-Verzeichnis)
 const DEFAULT_ZIELORDNER = "GyazooDumper";
-const NATIVE_HOST_NAME = "gyazodumper.nativeApp";
+const NATIVE_HOST_NAME = "gyazodumper.nativeapp";
 
 // Aktueller Zielordner (wird beim Start aus chrome.storage.local geladen)
 let zielordner = DEFAULT_ZIELORDNER;

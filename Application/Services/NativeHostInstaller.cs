@@ -17,7 +17,7 @@ namespace GyazoDumper.Services;
 /// </summary>
 public static class NativeHostInstaller
 {
-    private const string HostName = "gyazodumper.nativeApp";
+    private const string HostName = "gyazodumper.nativeapp";
     private const string AppFolderName = "GyazoDumper";
     private const string ExeFileName = "GyazoDumper.exe";
     private const string ChromeRegistryPath = @"SOFTWARE\Google\Chrome\NativeMessagingHosts\" + HostName;
