@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 
@@ -7,14 +8,18 @@ namespace GyazoDumper.Services;
 /// <summary>
 /// Installiert/Deinstalliert den GyazoDumper Native Messaging Host.
 /// 
-/// Ablauf bei Installation:
-///   1. Kopiert die EXE nach %APPDATA%\GyazoDumper\
-///   2. Erstellt das Native Messaging Manifest mit Extension-ID
-///   3. Registriert den Host in der Windows Registry (Chrome + Edge)
+/// Installationsablauf:
+///   1. Ordner erstellen + EXE kopieren
+///   2. Browser-Extension Dateien extrahieren
+///   3. Bestehende Manifest-Origins einlesen
+///   4. Extension-ID registrieren (Web Store ID + optional weitere)
+///   5. Registry-Eintraege erstellen
+///   6. Konfiguration erstellen/mergen
+///   7. Ordnerverknuepfung erstellen
 /// 
-/// Ablauf bei Deinstallation:
-///   1. Entfernt Registry-Eintraege
-///   2. Loescht den gesamten %APPDATA%\GyazoDumper\ Ordner
+/// Deinstallation:
+///   1. Registry-Eintraege entfernen
+///   2. Gesamten %APPDATA%\GyazoDumper\ Ordner loeschen
 /// </summary>
 public static class NativeHostInstaller
 {
@@ -25,16 +30,28 @@ public static class NativeHostInstaller
     private const string ChromeRegistryPath = @"SOFTWARE\Google\Chrome\NativeMessagingHosts\" + HostName;
     private const string EdgeRegistryPath = @"SOFTWARE\Microsoft\Edge\NativeMessagingHosts\" + HostName;
 
+    // Chrome Web Store Extension-ID (fest seit Veroeffentlichung)
+    private const string WebStoreExtensionId = "nlpifdgajdjkmenmmbpfekfefmaancnc";
+    private const string WebStoreUrl = "https://chromewebstore.google.com/detail/gyazodumper/" + WebStoreExtensionId;
+
     private static string AppDataDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         AppFolderName);
 
     private static string InstalledExePath => Path.Combine(AppDataDir, ExeFileName);
     private static string ManifestPath => Path.Combine(AppDataDir, $"{HostName}.json");
+    private static string ConfigPath => Path.Combine(AppDataDir, "config.json");
+
+    private static string DefaultSavePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+        "GyazoDumps");
+
+    // ========================================================================
+    //  Interaktiver Setup-Assistent
+    // ========================================================================
 
     /// <summary>
     /// Interaktiver Setup-Assistent - wird bei Doppelklick auf die EXE ausgefuehrt.
-    /// Fuehrt den Benutzer durch die Installation in 3 einfachen Schritten.
     /// </summary>
     public static void InteractiveInstall()
     {
@@ -47,8 +64,8 @@ public static class NativeHostInstaller
         Console.WriteLine($"  Installationsordner: {AppDataDir}");
         Console.WriteLine();
 
-        // Schritt 1: Dateien kopieren
-        Console.Write("  [1/4] Dateien installieren ...       ");
+        // --- Schritt 1: Ordner erstellen + EXE kopieren ---
+        Console.Write("  [1/7] Anwendung installieren ...             ");
         try
         {
             CopyToAppData();
@@ -61,64 +78,70 @@ public static class NativeHostInstaller
             return;
         }
 
-        // Schritt 2: Standard-Speicherpfad anzeigen und config erstellen
-        var defaultSavePath = EnsureConfigAndShortcut();
+        // --- Schritt 2: Browser-Extension Dateien extrahieren ---
+        Console.Write("  [2/7] Browser-Extension extrahieren ...      ");
+        try
+        {
+            ExtractBrowserExtension(Path.Combine(AppDataDir, ExtensionFolderName));
+            WriteOk();
+        }
+        catch (Exception ex)
+        {
+            WriteFail(ex.Message);
+            // Nicht abbrechen — Extension ist optional
+        }
 
-        Console.WriteLine("  [2/4] Speicherort konfigurieren");
-        Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"  Bilder werden gespeichert in:");
-        Console.WriteLine($"  {defaultSavePath}");
-        Console.ResetColor();
-        Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("  (Kann spaeter in der Browser-Extension geaendert werden)");
-        Console.ResetColor();
-        Console.WriteLine();
-
-        // 10-Sekunden Auto-Continue
-        Console.Write("  Weiter in 10 Sek (oder beliebige Taste druecken)...");
-        WaitWithTimeout(10);
-        Console.WriteLine();
-        Console.WriteLine();
-
-        // Schritt 3: Extension-ID abfragen
-        Console.WriteLine("  [3/4] Extension-ID registrieren");
-        Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine("  Oeffne die GyazoDumper Chrome-Extension und kopiere");
-        Console.WriteLine("  die dort angezeigte Extension-ID.");
-        Console.ResetColor();
-        Console.WriteLine();
-
-        // Bestehende IDs laden und anzeigen
+        // --- Schritt 3: Bestehende Manifest-Origins einlesen ---
+        Console.Write("  [3/7] Bestehende Konfiguration laden ...     ");
         var existingOrigins = LoadExistingOrigins();
         if (existingOrigins.Count > 0)
         {
+            WriteOk();
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine($"  Bereits registriert: {string.Join(", ", existingOrigins)}");
-            Console.ResetColor();
-        }
-
-        Console.Write("  Extension-ID eingeben: ");
-        var extensionId = Console.ReadLine()?.Trim();
-
-        if (string.IsNullOrEmpty(extensionId))
-        {
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine("  -> Uebersprungen. Du kannst das Setup spaeter erneut ausfuehren.");
+            Console.WriteLine($"        Bereits registriert: {existingOrigins.Count} Origin(s)");
             Console.ResetColor();
         }
         else
         {
-            // Ungueltige Zeichen entfernen (falls Benutzer mehr als die ID kopiert)
-            extensionId = extensionId.Replace("chrome-extension://", "").TrimEnd('/');
+            WriteOk();
         }
 
-        // Schritt 4: Manifest + Registry erstellen
-        Console.Write("  [4/4] Registry-Eintraege erstellen ...");
+        // --- Schritt 4: Extension-ID registrieren ---
+        Console.WriteLine("  [4/7] Extension registrieren");
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"        Chrome Web Store ID ist bereits hinterlegt:");
+        Console.WriteLine($"        {WebStoreExtensionId}");
+        Console.ResetColor();
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("        Zusaetzliche ID registrieren? (z.B. fuer Entwicklung)");
+        Console.ResetColor();
+        Console.Write("        Eingabe (oder Enter zum Ueberspringen): ");
+
+        var customId = Console.ReadLine()?.Trim();
+        if (!string.IsNullOrEmpty(customId))
+        {
+            customId = customId.Replace("chrome-extension://", "").TrimEnd('/');
+        }
+
+        Console.Write("        Manifest erstellen ...                  ");
         try
         {
-            CreateManifest(extensionId, existingOrigins);
+            CreateManifest(customId, existingOrigins);
+            WriteOk();
+        }
+        catch (Exception ex)
+        {
+            WriteFail(ex.Message);
+            WaitAndExit();
+            return;
+        }
+
+        // --- Schritt 5: Registry-Eintraege ---
+        Console.Write("  [5/7] Registry-Eintraege erstellen ...       ");
+        try
+        {
             RegisterInRegistry(ChromeRegistryPath, ManifestPath);
             RegisterInRegistry(EdgeRegistryPath, ManifestPath);
             WriteOk();
@@ -130,54 +153,115 @@ public static class NativeHostInstaller
             return;
         }
 
+        // --- Schritt 6: Konfiguration erstellen/mergen ---
+        Console.Write("  [6/7] Konfiguration erstellen ...            ");
+        string savePath;
+        try
+        {
+            savePath = MergeConfig();
+            WriteOk();
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"        Bilder werden gespeichert in:");
+            Console.WriteLine($"        {savePath}");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine("        (Kann spaeter in der Browser-Extension geaendert werden)");
+            Console.ResetColor();
+            Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            WriteFail(ex.Message);
+            savePath = DefaultSavePath;
+        }
+
+        // --- Schritt 7: Ordnerverknuepfung ---
+        Console.Write("  [7/7] Ordnerverknuepfung erstellen ...       ");
+        try
+        {
+            Directory.CreateDirectory(savePath);
+            UpdateFolderShortcut(savePath);
+            WriteOk();
+        }
+        catch (Exception ex)
+        {
+            WriteFail(ex.Message);
+        }
+
+        // --- Abschluss ---
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("  ══════════════════════════════════════");
         Console.WriteLine("  Installation abgeschlossen!");
+        Console.WriteLine("  ══════════════════════════════════════");
+        Console.ResetColor();
+        Console.WriteLine();
+        Console.WriteLine("  Browser-Extension installieren:");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.Write("  • Chrome Web Store: ");
+        Console.ResetColor();
+        Console.WriteLine(WebStoreUrl);
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write("  • Oder manuell laden aus: ");
+        Console.WriteLine(Path.Combine(AppDataDir, ExtensionFolderName));
         Console.ResetColor();
         Console.WriteLine();
 
-        // Browser-Extension extrahieren
-        var extensionDir = Path.Combine(AppDataDir, ExtensionFolderName);
+        // Ordner und Web Store oeffnen
         try
         {
-            ExtractBrowserExtension(extensionDir);
-            Console.WriteLine("  Browser-Extension extrahiert nach:");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"  {extensionDir}");
-            Console.ResetColor();
-            Console.WriteLine();
-            Console.WriteLine("  Falls die Extension noch nicht installiert ist:");
-            Console.WriteLine("  1. Oeffne chrome://extensions/ (oder edge://extensions/)");
-            Console.WriteLine("  2. Aktiviere den Entwicklermodus");
-            Console.WriteLine("  3. Klicke 'Entpackte Erweiterung laden'");
-            Console.WriteLine($"  4. Waehle den Ordner oben aus");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = WebStoreUrl,
+                UseShellExecute = true
+            });
         }
-        catch
-        {
-            Console.WriteLine("  Naechste Schritte:");
-            Console.WriteLine("  1. Starte Chrome / Edge neu");
-            Console.WriteLine("  2. Oeffne die GyazoDumper Extension");
-            Console.WriteLine("  3. Aktiviere 'Desktop-App verwenden'");
-        }
+        catch { }
 
-        Console.WriteLine();
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = AppDataDir
+            });
+        }
+        catch { }
+
         WaitAndExit();
     }
 
+    // ========================================================================
+    //  Stille Installation (Kommandozeile)
+    // ========================================================================
+
     /// <summary>
-    /// Kommandozeilen-Installation (still, ohne interaktive Eingabe)
-    /// Akzeptiert Extension-ID als Parameter: --install &lt;extension-id&gt;
+    /// Kommandozeilen-Installation (still, ohne interaktive Eingabe).
+    /// Web Store ID wird automatisch registriert.
+    /// Optional: zusaetzliche Extension-ID als Parameter.
     /// </summary>
-    public static void Install(string? extensionId = null)
+    public static void Install(string? additionalExtensionId = null)
     {
         CopyToAppData();
-        EnsureConfigAndShortcut();
+        ExtractBrowserExtension(Path.Combine(AppDataDir, ExtensionFolderName));
         var existingOrigins = LoadExistingOrigins();
-        CreateManifest(extensionId, existingOrigins);
+        CreateManifest(additionalExtensionId, existingOrigins);
         RegisterInRegistry(ChromeRegistryPath, ManifestPath);
         RegisterInRegistry(EdgeRegistryPath, ManifestPath);
-        try { ExtractBrowserExtension(Path.Combine(AppDataDir, ExtensionFolderName)); } catch { }
+        MergeConfig();
+        try
+        {
+            var config = LoadConfig();
+            Directory.CreateDirectory(config.SaveDirectory);
+            UpdateFolderShortcut(config.SaveDirectory);
+        }
+        catch { }
     }
+
+    // ========================================================================
+    //  Deinstallation
+    // ========================================================================
 
     /// <summary>
     /// Deinstalliert den Native Messaging Host vollstaendig
@@ -212,35 +296,12 @@ public static class NativeHostInstaller
         }
     }
 
-    /// <summary>
-    /// Erstellt Config und Ordnerverknuepfung falls nicht vorhanden
-    /// </summary>
-    private static string EnsureConfigAndShortcut()
-    {
-        var picturesPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-        var defaultSavePath = Path.Combine(picturesPath, "GyazoDumps");
-
-        Directory.CreateDirectory(defaultSavePath);
-
-        var configPath = Path.Combine(AppDataDir, "config.json");
-        if (!File.Exists(configPath))
-        {
-            var defaultConfig = new AppConfig
-            {
-                SaveDirectory = defaultSavePath,
-                FileNamePattern = "Gyazo_{timestamp}_{hash}{ext}"
-            };
-            var configJson = JsonSerializer.Serialize(defaultConfig, GyazoDumperJsonContext.Default.AppConfig);
-            File.WriteAllText(configPath, configJson);
-        }
-
-        try { UpdateFolderShortcut(defaultSavePath); } catch { }
-
-        return defaultSavePath;
-    }
+    // ========================================================================
+    //  Dateien kopieren / extrahieren
+    // ========================================================================
 
     /// <summary>
-    /// Kopiert die aktuelle EXE nach %APPDATA%\GyazoDumper\
+    /// Kopiert die aktuelle EXE nach %APPDATA%\GyazoDumper\.
     /// Falls die Zieldatei gesperrt ist (Chrome nutzt den Native Host),
     /// wird die alte Datei umbenannt und dann die neue kopiert.
     /// </summary>
@@ -251,10 +312,8 @@ public static class NativeHostInstaller
         var currentExe = Environment.ProcessPath
             ?? throw new InvalidOperationException("Konnte Anwendungspfad nicht ermitteln");
 
-        // Nur kopieren wenn wir nicht bereits aus AppData laufen
         var normalizedCurrent = Path.GetFullPath(currentExe).ToLowerInvariant();
         var normalizedTarget = Path.GetFullPath(InstalledExePath).ToLowerInvariant();
-
         if (normalizedCurrent == normalizedTarget) return;
 
         try
@@ -263,8 +322,6 @@ public static class NativeHostInstaller
         }
         catch (IOException)
         {
-            // Datei ist gesperrt (Chrome Native Host laeuft) -
-            // alte Datei umbenennen, dann neue kopieren
             var backupPath = InstalledExePath + ".old";
             try { File.Delete(backupPath); } catch { }
             File.Move(InstalledExePath, backupPath);
@@ -273,134 +330,7 @@ public static class NativeHostInstaller
     }
 
     /// <summary>
-    /// Laedt bereits registrierte allowed_origins aus einem bestehenden Manifest
-    /// </summary>
-    private static List<string> LoadExistingOrigins()
-    {
-        if (!File.Exists(ManifestPath))
-            return new List<string>();
-
-        try
-        {
-            var json = File.ReadAllText(ManifestPath);
-            var existing = JsonSerializer.Deserialize(json, ManifestJsonContext.Default.NativeMessagingManifest);
-            if (existing?.AllowedOrigins != null)
-                return new List<string>(existing.AllowedOrigins);
-        }
-        catch { }
-
-        return new List<string>();
-    }
-
-    /// <summary>
-    /// Erstellt das Native Messaging Manifest inkl. allowed_origins
-    /// </summary>
-    private static void CreateManifest(string? extensionId, List<string> existingOrigins)
-    {
-        var allowedOrigins = new List<string>(existingOrigins);
-
-        if (!string.IsNullOrEmpty(extensionId))
-        {
-            var origin = $"chrome-extension://{extensionId}/";
-            if (!allowedOrigins.Contains(origin))
-            {
-                allowedOrigins.Add(origin);
-            }
-        }
-
-        var manifest = new NativeMessagingManifest
-        {
-            Name = HostName,
-            Description = "GyazoDumper Native Messaging Host - Speichert Gyazo-Bilder an beliebigem Ort",
-            Path = InstalledExePath,
-            Type = "stdio",
-            AllowedOrigins = allowedOrigins.ToArray()
-        };
-
-        var json = JsonSerializer.Serialize(manifest, ManifestJsonContext.Default.NativeMessagingManifest);
-        File.WriteAllText(ManifestPath, json);
-    }
-
-    /// <summary>
-    /// Erstellt einen Registry-Eintrag fuer den Native Messaging Host
-    /// </summary>
-    private static void RegisterInRegistry(string registryPath, string manifestPath)
-    {
-        using var key = Registry.CurrentUser.CreateSubKey(registryPath);
-        key?.SetValue("", manifestPath);
-    }
-
-    private static void WriteOk()
-    {
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine(" OK");
-        Console.ResetColor();
-    }
-
-    private static void WriteFail(string message)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(" FEHLER");
-        Console.WriteLine($"  {message}");
-        Console.ResetColor();
-    }
-
-    private static void WaitAndExit()
-    {
-        Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
-        Console.ReadKey(true);
-    }
-
-    /// <summary>
-    /// Wartet die angegebene Anzahl Sekunden oder bis eine Taste gedrueckt wird
-    /// </summary>
-    private static void WaitWithTimeout(int seconds)
-    {
-        for (int i = seconds; i > 0; i--)
-        {
-            if (Console.KeyAvailable)
-            {
-                Console.ReadKey(true);
-                return;
-            }
-            Thread.Sleep(1000);
-        }
-    }
-
-    /// <summary>
-    /// Erstellt oder aktualisiert die Ordnerverknuepfung (Junction) im AppData-Ordner
-    /// zum Zielordner der gespeicherten Bilder.
-    /// Wird bei Installation und bei jedem Ordnerwechsel aufgerufen.
-    /// </summary>
-    public static void UpdateFolderShortcut(string targetPath)
-    {
-        var linkPath = Path.Combine(AppDataDir, "Gespeicherte Bilder");
-
-        // Bestehende Junction entfernen (Directory.Delete entfernt Junctions ohne den Inhalt zu loeschen)
-        if (Directory.Exists(linkPath))
-        {
-            try { Directory.Delete(linkPath, false); } catch { }
-        }
-
-        // Zielordner erstellen falls nicht vorhanden
-        try { Directory.CreateDirectory(targetPath); } catch { }
-
-        // Neue Junction erstellen (benoetigt keine Admin-Rechte)
-        var psi = new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments = $"/c mklink /J \"{linkPath}\" \"{targetPath}\"",
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-        var process = System.Diagnostics.Process.Start(psi);
-        process?.WaitForExit(5000);
-    }
-
-    /// <summary>
-    /// Extrahiert die eingebetteten Browser-Extension-Dateien nach dem angegebenen Ordner.
+    /// Extrahiert die eingebetteten Browser-Extension-Dateien.
     /// Ueberschreibt bestehende Dateien um Updates zu ermoeglichen.
     /// </summary>
     private static void ExtractBrowserExtension(string targetDir)
@@ -423,6 +353,174 @@ public static class NativeHostInstaller
             using var fileStream = File.Create(targetPath);
             stream.CopyTo(fileStream);
         }
+    }
+
+    // ========================================================================
+    //  Manifest (Native Messaging)
+    // ========================================================================
+
+    /// <summary>
+    /// Laedt bestehende allowed_origins aus einem vorhandenen Manifest
+    /// </summary>
+    private static List<string> LoadExistingOrigins()
+    {
+        if (!File.Exists(ManifestPath))
+            return new List<string>();
+
+        try
+        {
+            var json = File.ReadAllText(ManifestPath);
+            var existing = JsonSerializer.Deserialize(json, ManifestJsonContext.Default.NativeMessagingManifest);
+            if (existing?.AllowedOrigins != null)
+                return new List<string>(existing.AllowedOrigins);
+        }
+        catch { }
+
+        return new List<string>();
+    }
+
+    /// <summary>
+    /// Erstellt das Native Messaging Manifest.
+    /// Die Web Store Extension-ID wird immer automatisch hinzugefuegt.
+    /// Optional kann eine zusaetzliche ID (z.B. fuer Entwicklung) angegeben werden.
+    /// Bestehende Origins werden beibehalten.
+    /// </summary>
+    private static void CreateManifest(string? additionalExtensionId, List<string> existingOrigins)
+    {
+        var allowedOrigins = new HashSet<string>(existingOrigins);
+
+        // Web Store ID immer hinzufuegen
+        allowedOrigins.Add($"chrome-extension://{WebStoreExtensionId}/");
+
+        // Zusaetzliche ID hinzufuegen falls angegeben
+        if (!string.IsNullOrEmpty(additionalExtensionId))
+        {
+            allowedOrigins.Add($"chrome-extension://{additionalExtensionId}/");
+        }
+
+        var manifest = new NativeMessagingManifest
+        {
+            Name = HostName,
+            Description = "GyazoDumper Native Messaging Host - Speichert Gyazo-Bilder an beliebigem Ort",
+            Path = InstalledExePath,
+            Type = "stdio",
+            AllowedOrigins = allowedOrigins.ToArray()
+        };
+
+        var json = JsonSerializer.Serialize(manifest, ManifestJsonContext.Default.NativeMessagingManifest);
+        File.WriteAllText(ManifestPath, json);
+    }
+
+    // ========================================================================
+    //  Registry
+    // ========================================================================
+
+    private static void RegisterInRegistry(string registryPath, string manifestPath)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(registryPath);
+        key?.SetValue("", manifestPath);
+    }
+
+    // ========================================================================
+    //  Konfiguration (config.json merge)
+    // ========================================================================
+
+    /// <summary>
+    /// Laedt eine bestehende config.json oder erstellt Standardwerte.
+    /// </summary>
+    private static AppConfig LoadConfig()
+    {
+        if (File.Exists(ConfigPath))
+        {
+            try
+            {
+                var json = File.ReadAllText(ConfigPath);
+                var config = JsonSerializer.Deserialize(json, GyazoDumperJsonContext.Default.AppConfig);
+                if (config != null) return config;
+            }
+            catch { }
+        }
+        return new AppConfig();
+    }
+
+    /// <summary>
+    /// Merged bestehende config.json mit Standardwerten.
+    /// Vorhandene Werte bleiben erhalten, fehlende/leere Keys werden aufgefuellt.
+    /// Gibt den aktiven Speicherpfad zurueck.
+    /// </summary>
+    private static string MergeConfig()
+    {
+        var config = LoadConfig();
+
+        // Leere Werte mit Defaults fuellen
+        if (string.IsNullOrEmpty(config.SaveDirectory))
+            config.SaveDirectory = DefaultSavePath;
+
+        if (string.IsNullOrEmpty(config.FileNamePattern))
+            config.FileNamePattern = "Gyazo_{timestamp}_{hash}{ext}";
+
+        // Immer schreiben (stellt sicher dass neue Keys vorhanden sind)
+        var json = JsonSerializer.Serialize(config, GyazoDumperJsonContext.Default.AppConfig);
+        File.WriteAllText(ConfigPath, json);
+
+        return config.SaveDirectory;
+    }
+
+    // ========================================================================
+    //  Ordnerverknuepfung (Junction)
+    // ========================================================================
+
+    /// <summary>
+    /// Erstellt oder aktualisiert die Ordnerverknuepfung (Junction) im AppData-Ordner.
+    /// Wird bei Installation und bei jedem Ordnerwechsel aufgerufen.
+    /// </summary>
+    public static void UpdateFolderShortcut(string targetPath)
+    {
+        var linkPath = Path.Combine(AppDataDir, "Gespeicherte Bilder");
+
+        if (Directory.Exists(linkPath))
+        {
+            try { Directory.Delete(linkPath, false); } catch { }
+        }
+
+        try { Directory.CreateDirectory(targetPath); } catch { }
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/c mklink /J \"{linkPath}\" \"{targetPath}\"",
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        var process = Process.Start(psi);
+        process?.WaitForExit(5000);
+    }
+
+    // ========================================================================
+    //  Konsolen-Hilfsfunktionen
+    // ========================================================================
+
+    private static void WriteOk()
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("OK");
+        Console.ResetColor();
+    }
+
+    private static void WriteFail(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("FEHLER");
+        Console.WriteLine($"        {message}");
+        Console.ResetColor();
+    }
+
+    private static void WaitAndExit()
+    {
+        Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
+        Console.ReadKey(true);
     }
 }
 
