@@ -303,6 +303,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     // Nachricht vom Popup: Ordnerauswahl-Dialog ueber Native Host oeffnen
+    // Das Popup schliesst sich automatisch wenn der Dialog den Fokus bekommt (Chrome-Limitierung).
+    // Nach der Ordnerauswahl wird das Popup via chrome.action.openPopup() wieder geoeffnet.
     if (message.action === "browseFolder") {
         (async () => {
             try {
@@ -314,15 +316,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 const handler = (response) => {
                     port.onMessage.removeListener(handler);
-                    sendResponse(response);
+                    try { sendResponse(response); } catch {}
+
+                    // Popup wieder oeffnen nach Ordnerauswahl (Chrome 127+)
+                    setTimeout(() => {
+                        try { chrome.action.openPopup(); } catch {}
+                    }, 300);
                 };
                 port.onMessage.addListener(handler);
                 port.postMessage({ action: "selectFolder" });
 
                 setTimeout(() => {
                     port.onMessage.removeListener(handler);
-                    sendResponse({ success: false, error: "Timeout" });
-                }, 120000); // 2 Minuten - Benutzer braucht Zeit im Dialog
+                    try { sendResponse({ success: false, error: "Timeout" }); } catch {}
+                }, 120000);
             } catch (error) {
                 sendResponse({ success: false, error: error.message });
             }

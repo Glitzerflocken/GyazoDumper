@@ -125,7 +125,7 @@ async function toggleDesktopAppMode() {
 
 async function checkNativeHostStatus() {
     appStatusIndicator.className = "status-indicator checking";
-    appStatusText.textContent = "Pruefe Verbindung...";
+    appStatusText.textContent = "Pr&uuml;fe Verbindung...";
     installDetails.removeAttribute("open");
 
     try {
@@ -191,7 +191,7 @@ async function browseFolder() {
     }
 
     btnBrowseFolder.disabled = false;
-    btnBrowseFolder.textContent = "Ordner waehlen...";
+    btnBrowseFolder.textContent = "Wird ausgew&auml;hlt...";
 }
 
 async function openFolder() {
