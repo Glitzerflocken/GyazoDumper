@@ -13,7 +13,6 @@
 
 // Standard-Zielordner (Unterordner im Chrome-Download-Verzeichnis)
 const DEFAULT_ZIELORDNER = "GyazooDumper";
-const DEFAULT_DESKTOP_ZIELORDNER = "";
 
 // GitHub Release URL fuer automatischen Download der Setup-Datei
 const SETUP_DOWNLOAD_URL = "https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe";
@@ -56,12 +55,10 @@ async function loadSettings() {
     try {
         const result = await chrome.storage.local.get([
             "zielordner", 
-            "useDesktopApp", 
-            "desktopZielordner"
+            "useDesktopApp"
         ]);
 
         inputZielordner.value = result.zielordner || DEFAULT_ZIELORDNER;
-        inputDesktopZielordner.value = result.desktopZielordner || DEFAULT_DESKTOP_ZIELORDNER;
 
         // Desktop-App Toggle setzen
         const useDesktop = result.useDesktopApp || false;
@@ -184,7 +181,6 @@ async function browseFolder() {
 
         if (response.success) {
             inputDesktopZielordner.value = response.message;
-            await chrome.storage.local.set({ desktopZielordner: response.message });
             showStatus("Neuer Zielpfad gespeichert: " + response.message);
         } else if (response.error !== "Abgebrochen") {
             showStatus("Ordnerauswahl fehlgeschlagen.", true);
@@ -203,7 +199,6 @@ async function loadNativeConfig() {
 
         if (response.success && response.message) {
             inputDesktopZielordner.value = response.message;
-            await chrome.storage.local.set({ desktopZielordner: response.message });
         }
     } catch (error) {
         console.error("[GyazoDumper Popup] Config laden fehlgeschlagen:", error);

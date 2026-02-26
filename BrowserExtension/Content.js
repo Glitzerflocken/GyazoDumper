@@ -5,10 +5,11 @@
  * Liest den Bild-Link aus dem HTML-DOM aus und sendet ihn
  * an den Background Service Worker zum Download.
  *
- * Unterstuetzt SPA-Navigation: Gyazo verwendet history.pushState
- * wenn man per Pfeil-Tasten/Buttons zwischen Bildern wechselt.
- * Dabei wird keine neue Seite geladen - wir fangen URL-Aenderungen
- * ab und verarbeiten jedes neue Bild automatisch.
+ * SPA-Navigation:
+ *   Gyazo verwendet history.pushState (React) wenn man per Pfeil-Tasten
+ *   zwischen Bildern wechselt. Content Scripts laufen in einer isolierten
+ *   Welt und koennen pushState der Haupt-Welt nicht abfangen.
+ *   Daher wird URL-Polling (alle 500ms) verwendet um Navigationen zu erkennen.
  */
 
 // Regex: Prueft ob die URL eine Gyazo-Bild-Seite ist (32 hex-Zeichen nach gyazo.com/)
@@ -22,24 +23,23 @@ let activeObserver = null;
 let activeTimeout = null;
 
 // ============================================================================
-//  SPA-Navigation erkennen
+//  SPA-Navigation erkennen (URL-Polling)
 // ============================================================================
 
-// history.pushState/replaceState abfangen (Gyazo Pfeil-Navigation)
-const originalPushState = history.pushState;
-const originalReplaceState = history.replaceState;
+/**
+ * Prueft regelmaessig ob sich die URL geaendert hat.
+ * Content Scripts laufen in einer isolierten Welt und koennen
+ * history.pushState der Haupt-Seite (Gyazo React) nicht abfangen.
+ * URL-Polling ist die zuverlaessigste Methode.
+ */
+setInterval(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastProcessedUrl) {
+        onUrlChange();
+    }
+}, 500);
 
-history.pushState = function (...args) {
-    originalPushState.apply(this, args);
-    onUrlChange();
-};
-
-history.replaceState = function (...args) {
-    originalReplaceState.apply(this, args);
-    onUrlChange();
-};
-
-// Browser-Zurueck/Vorwaerts
+// Browser-Zurueck/Vorwaerts (popstate feuert auch in der Content-Welt)
 window.addEventListener("popstate", onUrlChange);
 
 /**
@@ -62,7 +62,9 @@ function onUrlChange() {
         activeTimeout = null;
     }
 
-    findAndSendImageUrl();
+    // Kurzer Delay: Bei SPA-Navigation aendert sich die URL sofort,
+    // aber das Bild-Element im DOM braucht einen Moment um zu aktualisieren
+    setTimeout(findAndSendImageUrl, 100);
 }
 
 // ============================================================================
@@ -121,14 +123,14 @@ function findAndSendImageUrl() {
 
 /**
  * Sucht im DOM nach dem Bild-Element und gibt die src-URL zurueck.
+ * Prueft ob die src eine gueltige Bild-URL ist (nicht die alte bei SPA-Navigation).
  */
 function getImageSrcFromDom() {
     const imgElement = document.querySelector(
         "div.image-box-component picture img.image-viewer"
     );
 
-    if (imgElement && imgElement.src) {
-        console.log(`[GyazoDumper] Bild-URL im DOM gefunden: ${imgElement.src}`);
+    if (imgElement && imgElement.src && imgElement.src.startsWith("http")) {
         return imgElement.src;
     }
 
