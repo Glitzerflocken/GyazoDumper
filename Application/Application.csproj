@@ -13,8 +13,8 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
-    <!-- Kein Konsolenfenster im Native Messaging Modus -->
-    <ApplicationIcon />
+    <!-- Application Icon -->
+    <ApplicationIcon>GyazoDumper.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

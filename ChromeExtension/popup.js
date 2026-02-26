@@ -5,6 +5,8 @@
  *   - Zielordner laden/speichern (Browser-Modus)
  *   - Desktop-App Modus aktivieren/deaktivieren
  *   - Desktop-App Status pruefen und Installation anbieten
+ *   - Extension-ID anzeigen und kopieren (fuer Setup)
+ *   - Setup-Download direkt aus dem Popup starten
  *   - Gespeicherte IDs als Textdatei exportieren (saveAs-Dialog)
  *   - Alle gespeicherten IDs loeschen (mit Bestaetigungsdialog)
  */
@@ -13,8 +15,8 @@
 const DEFAULT_ZIELORDNER = "GyazooDumper";
 const DEFAULT_DESKTOP_ZIELORDNER = "";
 
-// GitHub Release URL fuer automatischen Download
-const GITHUB_RELEASE_URL = "https://github.com/Glitzerflocken/GyazoDumper/releases/latest";
+// GitHub Release URL fuer automatischen Download der Setup-Datei
+const SETUP_DOWNLOAD_URL = "https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe";
 
 // UI-Elemente
 const inputZielordner = document.getElementById("inputZielordner");
@@ -33,10 +35,18 @@ const desktopAppSection = document.getElementById("desktopAppSection");
 const browserZielordnerSection = document.getElementById("browserZielordnerSection");
 const appStatusIndicator = document.getElementById("appStatusIndicator");
 const appStatusText = document.getElementById("appStatusText");
+const installSection = document.getElementById("installSection");
 const btnInstallApp = document.getElementById("btnInstallApp");
-const installHint = document.getElementById("installHint");
+const btnCopyId = document.getElementById("btnCopyId");
+const extensionIdEl = document.getElementById("extensionId");
 const inputDesktopZielordner = document.getElementById("inputDesktopZielordner");
 const btnSaveDesktopPath = document.getElementById("btnSaveDesktopPath");
+
+// ============================================================================
+//  Extension-ID anzeigen
+// ============================================================================
+
+extensionIdEl.textContent = chrome.runtime.id;
 
 // ============================================================================
 //  Zielordner (Browser-Modus)
@@ -134,8 +144,7 @@ async function toggleDesktopAppMode() {
 async function checkNativeHostStatus() {
     appStatusIndicator.className = "status-indicator checking";
     appStatusText.textContent = "Pruefe Verbindung...";
-    btnInstallApp.style.display = "none";
-    installHint.style.display = "none";
+    installSection.style.display = "none";
 
     try {
         const response = await chrome.runtime.sendMessage({ action: "checkNativeHost" });
@@ -143,24 +152,42 @@ async function checkNativeHostStatus() {
         if (response.installed) {
             appStatusIndicator.className = "status-indicator connected";
             appStatusText.textContent = "Desktop-App verbunden";
-            btnInstallApp.style.display = "none";
-            installHint.style.display = "none";
+            installSection.style.display = "none";
         } else {
             appStatusIndicator.className = "status-indicator disconnected";
             appStatusText.textContent = "Desktop-App nicht gefunden";
-            btnInstallApp.style.display = "block";
-            installHint.style.display = "block";
+            installSection.style.display = "block";
         }
     } catch (error) {
         appStatusIndicator.className = "status-indicator disconnected";
         appStatusText.textContent = "Verbindungsfehler";
-        btnInstallApp.style.display = "block";
-        installHint.style.display = "block";
+        installSection.style.display = "block";
     }
 }
 
-function openInstallPage() {
-    chrome.tabs.create({ url: GITHUB_RELEASE_URL });
+function downloadSetup() {
+    chrome.downloads.download({
+        url: SETUP_DOWNLOAD_URL,
+        filename: "GyazoDumper-Setup.exe",
+        saveAs: true
+    }, (downloadId) => {
+        if (chrome.runtime.lastError) {
+            showStatus("Download fehlgeschlagen!", true);
+        } else {
+            showStatus("Setup wird heruntergeladen...");
+        }
+    });
+}
+
+function copyExtensionId() {
+    navigator.clipboard.writeText(chrome.runtime.id).then(() => {
+        btnCopyId.textContent = "Kopiert!";
+        btnCopyId.classList.add("copied");
+        setTimeout(() => {
+            btnCopyId.textContent = "Kopieren";
+            btnCopyId.classList.remove("copied");
+        }, 2000);
+    });
 }
 
 // ============================================================================
@@ -199,7 +226,7 @@ async function exportIds() {
             {
                 url: blobUrl,
                 filename: "Saved_URLs.txt",
-                saveAs: true  // Benutzer waehlt den Speicherort
+                saveAs: true
             },
             (downloadId) => {
                 URL.revokeObjectURL(blobUrl);
@@ -268,7 +295,8 @@ btnConfirmNo.addEventListener("click", hideConfirmDialog);
 
 // Desktop-App Event-Listener
 toggleDesktopApp.addEventListener("change", toggleDesktopAppMode);
-btnInstallApp.addEventListener("click", openInstallPage);
+btnInstallApp.addEventListener("click", downloadSetup);
+btnCopyId.addEventListener("click", copyExtensionId);
 btnSaveDesktopPath.addEventListener("click", saveDesktopPath);
 inputDesktopZielordner.addEventListener("keydown", (e) => {
     if (e.key === "Enter") saveDesktopPath();
