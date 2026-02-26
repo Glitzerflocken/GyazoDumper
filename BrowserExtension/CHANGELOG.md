@@ -29,7 +29,7 @@
 ## Entwicklungsnotizen (Visual Studio)
 
 Folgende Schritte wurden zur Erstellung dieses Projekts verwendet:
-- Projektdatei (`ChromeExtension.esproj`) erstellen.
+- Projektdatei (`BrowserExtension.esproj`) erstellen.
 - Erstellen Sie `launch.json`, um das Debuggen zu aktivieren.
 - NPM-Pakete installieren: `npm init && npm i --save-dev eslint`.
 - Erstellen Sie `app.js`.
