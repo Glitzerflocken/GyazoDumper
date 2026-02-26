@@ -225,11 +225,12 @@ public static class NativeHostInstaller
         var configPath = Path.Combine(AppDataDir, "config.json");
         if (!File.Exists(configPath))
         {
-            var configJson = JsonSerializer.Serialize(new
+            var defaultConfig = new AppConfig
             {
                 SaveDirectory = defaultSavePath,
                 FileNamePattern = "Gyazo_{timestamp}_{hash}{ext}"
-            }, new JsonSerializerOptions { WriteIndented = true });
+            };
+            var configJson = JsonSerializer.Serialize(defaultConfig, GyazoDumperJsonContext.Default.AppConfig);
             File.WriteAllText(configPath, configJson);
         }
 
@@ -282,12 +283,7 @@ public static class NativeHostInstaller
         try
         {
             var json = File.ReadAllText(ManifestPath);
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                PropertyNameCaseInsensitive = true
-            };
-            var existing = JsonSerializer.Deserialize<NativeMessagingManifest>(json, options);
+            var existing = JsonSerializer.Deserialize(json, ManifestJsonContext.Default.NativeMessagingManifest);
             if (existing?.AllowedOrigins != null)
                 return new List<string>(existing.AllowedOrigins);
         }
@@ -321,13 +317,7 @@ public static class NativeHostInstaller
             AllowedOrigins = allowedOrigins.ToArray()
         };
 
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-
-        var json = JsonSerializer.Serialize(manifest, options);
+        var json = JsonSerializer.Serialize(manifest, ManifestJsonContext.Default.NativeMessagingManifest);
         File.WriteAllText(ManifestPath, json);
     }
 

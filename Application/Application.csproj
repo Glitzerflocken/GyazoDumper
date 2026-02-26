@@ -13,11 +13,13 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
+    <!-- Groessen-Optimierung -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
     <!-- Application Icon -->
     <ApplicationIcon>GyazoDumper.ico</ApplicationIcon>
-
-    <!-- Windows Forms fuer FolderBrowserDialog -->
-    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <!-- Browser-Extension Dateien als Embedded Resources einbetten -->

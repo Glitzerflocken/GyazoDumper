@@ -59,7 +59,7 @@ public class ConfigurationService
             try
             {
                 var json = File.ReadAllText(_configPath);
-                var config = JsonSerializer.Deserialize<AppConfig>(json);
+                var config = JsonSerializer.Deserialize(json, GyazoDumperJsonContext.Default.AppConfig);
                 if (config != null)
                 {
                     return config;
@@ -94,8 +94,7 @@ public class ConfigurationService
     /// </summary>
     private void SaveConfig(AppConfig config)
     {
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        var json = JsonSerializer.Serialize(config, options);
+        var json = JsonSerializer.Serialize(config, GyazoDumperJsonContext.Default.AppConfig);
         File.WriteAllText(_configPath, json);
     }
 }
