@@ -270,6 +270,9 @@ h2:first-child {
   font-family: Consolas, monospace;
   box-sizing: border-box;
   margin-top: 8px;
+  background: #eee;
+  color: #444;
+  cursor: default;
 }
 #inputDesktopZielordner:focus {
   border-color: #1a73e8;

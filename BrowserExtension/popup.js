@@ -40,7 +40,6 @@ const btnInstallApp = document.getElementById("btnInstallApp");
 const btnCopyId = document.getElementById("btnCopyId");
 const extensionIdEl = document.getElementById("extensionId");
 const inputDesktopZielordner = document.getElementById("inputDesktopZielordner");
-const btnSaveDesktopPath = document.getElementById("btnSaveDesktopPath");
 const btnBrowseFolder = document.getElementById("btnBrowseFolder");
 
 // ============================================================================
@@ -89,22 +88,6 @@ async function saveSettings() {
     try {
         await chrome.storage.local.set({ zielordner: pfad });
         showStatus("Gespeichert!");
-    } catch (error) {
-        showStatus("Fehler beim Speichern!", true);
-    }
-}
-
-async function saveDesktopPath() {
-    const pfad = inputDesktopZielordner.value.trim();
-
-    if (!pfad) {
-        showStatus("Bitte einen vollstaendigen Pfad eingeben.", true);
-        return;
-    }
-
-    try {
-        await chrome.storage.local.set({ desktopZielordner: pfad });
-        showStatus("Desktop-Pfad gespeichert!");
     } catch (error) {
         showStatus("Fehler beim Speichern!", true);
     }
@@ -334,11 +317,7 @@ btnConfirmNo.addEventListener("click", hideConfirmDialog);
 toggleDesktopApp.addEventListener("change", toggleDesktopAppMode);
 btnInstallApp.addEventListener("click", downloadSetup);
 btnCopyId.addEventListener("click", copyExtensionId);
-btnSaveDesktopPath.addEventListener("click", saveDesktopPath);
 btnBrowseFolder.addEventListener("click", browseFolder);
-inputDesktopZielordner.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") saveDesktopPath();
-});
 
 // Beim Oeffnen des Popups: Einstellungen und ID-Zaehler laden
 loadSettings();
