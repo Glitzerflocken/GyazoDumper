@@ -206,7 +206,9 @@ public class NativeMessagingHost
     }
 
     /// <summary>
-    /// Oeffnet einen Windows-Ordnerauswahl-Dialog und speichert den gewaehlten Pfad
+    /// Oeffnet einen Windows-Ordnerauswahl-Dialog und speichert den gewaehlten Pfad.
+    /// Erstellt ein unsichtbares TopMost-Fenster als Owner damit der Dialog
+    /// im Vordergrund erscheint und fokussiert wird.
     /// </summary>
     private Task<NativeResponse> HandleSelectFolderAsync()
     {
@@ -216,6 +218,18 @@ public class NativeMessagingHost
 
             var thread = new Thread(() =>
             {
+                // Unsichtbares TopMost-Fenster als Owner - erzwingt Vordergrund + Fokus
+                var ownerForm = new Form
+                {
+                    TopMost = true,
+                    ShowInTaskbar = false,
+                    FormBorderStyle = FormBorderStyle.None,
+                    Size = System.Drawing.Size.Empty,
+                    StartPosition = FormStartPosition.Manual,
+                    Location = new System.Drawing.Point(-9999, -9999)
+                };
+                ownerForm.Show();
+
                 using var dialog = new FolderBrowserDialog
                 {
                     Description = "Zielordner fuer GyazoDumper auswaehlen",
@@ -228,10 +242,13 @@ public class NativeMessagingHost
                     dialog.InitialDirectory = _config.SaveDirectory;
                 }
 
-                if (dialog.ShowDialog() == DialogResult.OK)
+                if (dialog.ShowDialog(ownerForm) == DialogResult.OK)
                 {
                     selectedPath = dialog.SelectedPath;
                 }
+
+                ownerForm.Close();
+                ownerForm.Dispose();
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
