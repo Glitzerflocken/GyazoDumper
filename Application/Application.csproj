@@ -20,4 +20,15 @@
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
+  <!-- Browser-Extension Dateien als eingebettete Ressourcen -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\BrowserExtension\manifest.json" LogicalName="BrowserExtension.manifest.json" />
+    <EmbeddedResource Include="..\BrowserExtension\Content.js" LogicalName="BrowserExtension.Content.js" />
+    <EmbeddedResource Include="..\BrowserExtension\background.js" LogicalName="BrowserExtension.background.js" />
+    <EmbeddedResource Include="..\BrowserExtension\SettingsPopup.html" LogicalName="BrowserExtension.SettingsPopup.html" />
+    <EmbeddedResource Include="..\BrowserExtension\popup.js" LogicalName="BrowserExtension.popup.js" />
+    <EmbeddedResource Include="..\BrowserExtension\popup.css" LogicalName="BrowserExtension.popup.css" />
+    <EmbeddedResource Include="..\BrowserExtension\GyazoDumper.png" LogicalName="BrowserExtension.GyazoDumper.png" />
+  </ItemGroup>
+
 </Project>

@@ -144,6 +144,7 @@ public class NativeMessagingHost
                 if (!string.IsNullOrEmpty(message.SaveDirectory))
                 {
                     _config.UpdateSaveDirectory(message.SaveDirectory);
+                    try { NativeHostInstaller.UpdateFolderShortcut(message.SaveDirectory); } catch { }
                     return new NativeResponse
                     {
                         Success = true,
@@ -262,6 +263,7 @@ public class NativeMessagingHost
             if (selectedPath != null)
             {
                 _config.UpdateSaveDirectory(selectedPath);
+                try { NativeHostInstaller.UpdateFolderShortcut(selectedPath); } catch { }
                 return new NativeResponse { Success = true, Message = selectedPath };
             }
             return new NativeResponse { Success = false, Error = "Abgebrochen" };
