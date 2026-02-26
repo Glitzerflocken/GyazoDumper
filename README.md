@@ -22,8 +22,8 @@
   <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest">
     <img src="https://img.shields.io/github/v/release/Glitzerflocken/GyazoDumper?style=flat-square&label=Version" alt="Latest Release">
   </a>
-  <img src="https://img.shields.io/badge/Chrome_%7C_Edge-Manifest_V3-34a853?style=flat-square&logo=googlechrome&logoColor=white" alt="Manifest V3">
-  <img src="https://img.shields.io/badge/.NET_10-Windows-512bd4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET 10">
+  <a><img src="https://img.shields.io/badge/Chrome_%7C_Edge-Manifest_V3-34a853?style=flat-square&logo=googlechrome&logoColor=white" alt="Manifest V3"></a>
+  <a><img src="https://img.shields.io/badge/.NET_10-Windows-512bd4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET 10"></a>
 </p>
 
 ---
