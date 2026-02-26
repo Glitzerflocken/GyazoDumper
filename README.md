@@ -18,8 +18,12 @@
   <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest">
     <img src="https://img.shields.io/github/v/release/Glitzerflocken/GyazoDumper?style=flat-square&label=Version" alt="Latest Release">
   </a>
-  <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension">
-  <img src="https://img.shields.io/badge/Edge-Extension-0078D7?style=flat-square&logo=microsoftedge&logoColor=white" alt="Edge Extension">
+  <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/ChromeExtension.zip">
+    <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension">
+  </a>
+  <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/ChromeExtension.zip">
+    <img src="https://img.shields.io/badge/Edge-Extension-0078D7?style=flat-square&logo=microsoftedge&logoColor=white" alt="Edge Extension">
+  </a>
 </p>
 
 ---

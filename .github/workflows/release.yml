@@ -1,0 +1,21 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  package-extension:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package ChromeExtension as ZIP
+        run: zip -r ChromeExtension.zip ChromeExtension/
+
+      - name: Upload ChromeExtension.zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ChromeExtension.zip
