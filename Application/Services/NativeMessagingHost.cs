@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
@@ -206,9 +207,10 @@ public class NativeMessagingHost
     }
 
     /// <summary>
-    /// Oeffnet einen Windows-Ordnerauswahl-Dialog und speichert den gewaehlten Pfad.
-    /// Erstellt ein unsichtbares TopMost-Fenster als Owner damit der Dialog
-    /// im Vordergrund erscheint und fokussiert wird.
+    /// Oeffnet einen Windows-Ordnerauswahl-Dialog im Vordergrund.
+    /// Da der Native Host ein Hintergrund-Prozess ist (von Chrome gestartet),
+    /// muss der Input-Thread an den Vordergrund-Thread angehaengt werden
+    /// damit Windows das SetForegroundWindow erlaubt.
     /// </summary>
     private Task<NativeResponse> HandleSelectFolderAsync()
     {
@@ -218,7 +220,6 @@ public class NativeMessagingHost
 
             var thread = new Thread(() =>
             {
-                // Unsichtbares TopMost-Fenster als Owner - erzwingt Vordergrund + Fokus
                 var ownerForm = new Form
                 {
                     TopMost = true,
@@ -229,6 +230,10 @@ public class NativeMessagingHost
                     Location = new System.Drawing.Point(-9999, -9999)
                 };
                 ownerForm.Show();
+
+                // Input-Thread an den aktuellen Vordergrund-Thread anhaengen,
+                // damit unser Prozess SetForegroundWindow aufrufen darf
+                ForceForeground(ownerForm.Handle);
 
                 using var dialog = new FolderBrowserDialog
                 {
@@ -261,6 +266,53 @@ public class NativeMessagingHost
             }
             return new NativeResponse { Success = false, Error = "Abgebrochen" };
         });
+    }
+
+    // ========================================================================
+    //  Win32 API: Fenster in den Vordergrund zwingen
+    // ========================================================================
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [DllImport("user32.dll")]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
+    /// <summary>
+    /// Zwingt ein Fenster in den Vordergrund, auch aus einem Hintergrund-Prozess.
+    /// Haengt den eigenen Input-Thread an den Thread des aktuellen Vordergrund-Fensters,
+    /// ruft SetForegroundWindow auf, und trennt die Threads wieder.
+    /// </summary>
+    private static void ForceForeground(IntPtr hWnd)
+    {
+        var foregroundWnd = GetForegroundWindow();
+        var foregroundThread = GetWindowThreadProcessId(foregroundWnd, out _);
+        var currentThread = GetCurrentThreadId();
+
+        if (foregroundThread != currentThread)
+        {
+            AttachThreadInput(currentThread, foregroundThread, true);
+            SetForegroundWindow(hWnd);
+            BringWindowToTop(hWnd);
+            AttachThreadInput(currentThread, foregroundThread, false);
+        }
+        else
+        {
+            SetForegroundWindow(hWnd);
+            BringWindowToTop(hWnd);
+        }
     }
 }
 
