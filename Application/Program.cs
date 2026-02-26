@@ -6,9 +6,10 @@ namespace GyazoDumper;
 /// GyazoDumper - Native Messaging Host fuer Chrome Extension
 /// 
 /// Verwendung:
-///   GyazoDumper.exe --install     Registriert den Native Host in Windows
-///   GyazoDumper.exe --uninstall   Entfernt die Registrierung
-///   GyazoDumper.exe               Startet im Native Messaging Modus (von Chrome aufgerufen)
+///   GyazoDumper.exe                     Interaktiver Setup-Assistent (Doppelklick)
+///   GyazoDumper.exe --install [ID]      Stille Installation (optional mit Extension-ID)
+///   GyazoDumper.exe --uninstall         Entfernt die Installation
+///   GyazoDumper.exe chrome-extension:// Wird von Chrome/Edge als Native Host gestartet
 /// </summary>
 public class Program
 {
@@ -16,28 +17,24 @@ public class Program
     {
         try
         {
-            // Installation/Deinstallation
-            if (args.Contains("--install"))
+            // Chrome/Edge startet den Native Host mit "chrome-extension://ID/" als Argument
+            if (args.Any(a => a.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase)))
             {
-                NativeHostInstaller.Install();
-                Console.WriteLine("GyazoDumper Native Messaging Host wurde erfolgreich registriert.");
-                Console.WriteLine();
-                Console.WriteLine("Naechste Schritte:");
-                Console.WriteLine("1. Oeffne die GyazoDumper Chrome Extension");
-                Console.WriteLine("2. Aktiviere 'Desktop-App verwenden'");
-                Console.WriteLine("3. Setze den gewuenschten Speicherpfad");
-                Console.WriteLine();
-                Console.WriteLine("Druecke eine beliebige Taste zum Beenden...");
-                Console.ReadKey();
+                var host = new NativeMessagingHost();
+                await host.RunAsync();
                 return;
             }
 
             if (args.Contains("--uninstall"))
             {
+                Console.WriteLine();
+                Console.WriteLine("  GyazoDumper wird deinstalliert...");
+                Console.WriteLine();
                 NativeHostInstaller.Uninstall();
-                Console.WriteLine("GyazoDumper Native Messaging Host wurde entfernt.");
-                Console.WriteLine("Druecke eine beliebige Taste zum Beenden...");
-                Console.ReadKey();
+                Console.WriteLine();
+                Console.WriteLine("  Deinstallation abgeschlossen.");
+                Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
+                Console.ReadKey(true);
                 return;
             }
 
@@ -47,14 +44,24 @@ public class Program
                 return;
             }
 
-            // Native Messaging Modus (wird von Chrome gestartet)
-            // Keine Konsolenausgabe hier, da Chrome stdin/stdout verwendet
-            var host = new NativeMessagingHost();
-            await host.RunAsync();
+            if (args.Contains("--install"))
+            {
+                // Stille Installation mit optionaler Extension-ID
+                var idIndex = Array.IndexOf(args, "--install") + 1;
+                string? extensionId = (idIndex < args.Length && !args[idIndex].StartsWith("--"))
+                    ? args[idIndex]
+                    : null;
+
+                NativeHostInstaller.Install(extensionId);
+                Console.WriteLine("GyazoDumper wurde erfolgreich installiert.");
+                return;
+            }
+
+            // Standard: Interaktiver Setup-Assistent (Doppelklick auf EXE)
+            NativeHostInstaller.InteractiveInstall();
         }
         catch (Exception ex)
         {
-            // Fehler loggen (nicht auf Console, da das Native Messaging stoert)
             var logPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "GyazoDumper",
@@ -70,11 +77,12 @@ public class Program
         Console.WriteLine("GyazoDumper - Native Messaging Host");
         Console.WriteLine();
         Console.WriteLine("Verwendung:");
-        Console.WriteLine("  GyazoDumper.exe --install     Registriert den Native Host");
-        Console.WriteLine("  GyazoDumper.exe --uninstall   Entfernt die Registrierung");
-        Console.WriteLine("  GyazoDumper.exe --help        Zeigt diese Hilfe");
+        Console.WriteLine("  GyazoDumper.exe                  Interaktiver Setup-Assistent");
+        Console.WriteLine("  GyazoDumper.exe --install [ID]   Stille Installation");
+        Console.WriteLine("  GyazoDumper.exe --uninstall      Entfernt die Installation");
+        Console.WriteLine("  GyazoDumper.exe --help           Zeigt diese Hilfe");
         Console.WriteLine();
-        Console.WriteLine("Nach der Installation kann die Desktop-App in der");
-        Console.WriteLine("Chrome Extension aktiviert werden.");
+        Console.WriteLine("Setup: Starte die EXE per Doppelklick und folge den Anweisungen.");
+        Console.WriteLine("Die Extension-ID findest du im GyazoDumper Browser-Popup.");
     }
 }

@@ -4,123 +4,278 @@ using System.Text.Json;
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// Registriert/Deregistriert den Native Messaging Host in Windows
+/// Installiert/Deinstalliert den GyazoDumper Native Messaging Host.
 /// 
-/// Chrome sucht nach dem Host-Manifest unter:
-///   HKCU\SOFTWARE\Google\Chrome\NativeMessagingHosts\{name}
+/// Ablauf bei Installation:
+///   1. Kopiert die EXE nach %APPDATA%\GyazoDumper\
+///   2. Erstellt das Native Messaging Manifest mit Extension-ID
+///   3. Registriert den Host in der Windows Registry (Chrome + Edge)
 /// 
-/// Das Manifest zeigt auf die ausfuehrbare Datei und definiert
-/// welche Chrome Extensions den Host verwenden duerfen.
+/// Ablauf bei Deinstallation:
+///   1. Entfernt Registry-Eintraege
+///   2. Loescht den gesamten %APPDATA%\GyazoDumper\ Ordner
 /// </summary>
 public static class NativeHostInstaller
 {
-    private const string HostName = "com.gyazodumper.nativehost";
+    private const string HostName = "gyazodumper.nativeApp";
+    private const string AppFolderName = "GyazoDumper";
+    private const string ExeFileName = "GyazoDumper.exe";
     private const string ChromeRegistryPath = @"SOFTWARE\Google\Chrome\NativeMessagingHosts\" + HostName;
     private const string EdgeRegistryPath = @"SOFTWARE\Microsoft\Edge\NativeMessagingHosts\" + HostName;
 
+    private static string AppDataDir => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        AppFolderName);
+
+    private static string InstalledExePath => Path.Combine(AppDataDir, ExeFileName);
+    private static string ManifestPath => Path.Combine(AppDataDir, $"{HostName}.json");
+
     /// <summary>
-    /// Installiert den Native Messaging Host
+    /// Interaktiver Setup-Assistent - wird bei Doppelklick auf die EXE ausgefuehrt.
+    /// Fuehrt den Benutzer durch die Installation in 3 einfachen Schritten.
     /// </summary>
-    public static void Install()
+    public static void InteractiveInstall()
     {
-        var exePath = Environment.ProcessPath
-            ?? throw new InvalidOperationException("Konnte Anwendungspfad nicht ermitteln");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("╔══════════════════════════════════════╗");
+        Console.WriteLine("║       GyazoDumper Setup              ║");
+        Console.WriteLine("╚══════════════════════════════════════╝");
+        Console.ResetColor();
+        Console.WriteLine();
+        Console.WriteLine($"  Installationsordner: {AppDataDir}");
+        Console.WriteLine();
 
-        // Manifest erstellen
-        var manifestPath = CreateManifest(exePath);
+        // Schritt 1: Dateien kopieren
+        Console.Write("  [1/3] Dateien installieren ...       ");
+        try
+        {
+            CopyToAppData();
+            WriteOk();
+        }
+        catch (Exception ex)
+        {
+            WriteFail(ex.Message);
+            WaitAndExit();
+            return;
+        }
 
-        // In Registry registrieren (Chrome und Edge)
-        RegisterInRegistry(ChromeRegistryPath, manifestPath);
-        RegisterInRegistry(EdgeRegistryPath, manifestPath);
+        // Schritt 2: Extension-ID abfragen
+        Console.WriteLine("  [2/3] Extension-ID registrieren");
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("  Oeffne die GyazoDumper Chrome-Extension und kopiere");
+        Console.WriteLine("  die dort angezeigte Extension-ID.");
+        Console.ResetColor();
+        Console.WriteLine();
 
-        Console.WriteLine($"Manifest erstellt: {manifestPath}");
-        Console.WriteLine($"Registry-Eintrag erstellt fuer Chrome und Edge");
+        // Bestehende IDs laden und anzeigen
+        var existingOrigins = LoadExistingOrigins();
+        if (existingOrigins.Count > 0)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"  Bereits registriert: {string.Join(", ", existingOrigins)}");
+            Console.ResetColor();
+        }
+
+        Console.Write("  Extension-ID eingeben: ");
+        var extensionId = Console.ReadLine()?.Trim();
+
+        if (string.IsNullOrEmpty(extensionId))
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("  -> Uebersprungen. Du kannst das Setup spaeter erneut ausfuehren.");
+            Console.ResetColor();
+        }
+        else
+        {
+            // Ungueltige Zeichen entfernen (falls Benutzer mehr als die ID kopiert)
+            extensionId = extensionId.Replace("chrome-extension://", "").TrimEnd('/');
+        }
+
+        // Schritt 3: Manifest + Registry erstellen
+        Console.Write("  [3/3] Registry-Eintraege erstellen ...");
+        try
+        {
+            CreateManifest(extensionId, existingOrigins);
+            RegisterInRegistry(ChromeRegistryPath, ManifestPath);
+            RegisterInRegistry(EdgeRegistryPath, ManifestPath);
+            WriteOk();
+        }
+        catch (Exception ex)
+        {
+            WriteFail(ex.Message);
+            WaitAndExit();
+            return;
+        }
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("  Installation abgeschlossen!");
+        Console.ResetColor();
+        Console.WriteLine();
+        Console.WriteLine("  Naechste Schritte:");
+        Console.WriteLine("  1. Starte Chrome / Edge neu");
+        Console.WriteLine("  2. Oeffne die GyazoDumper Extension");
+        Console.WriteLine("  3. Aktiviere 'Desktop-App verwenden'");
+        Console.WriteLine("  4. Setze den gewuenschten Speicherpfad");
+        Console.WriteLine();
+        WaitAndExit();
     }
 
     /// <summary>
-    /// Deinstalliert den Native Messaging Host
+    /// Kommandozeilen-Installation (still, ohne interaktive Eingabe)
+    /// Akzeptiert Extension-ID als Parameter: --install &lt;extension-id&gt;
+    /// </summary>
+    public static void Install(string? extensionId = null)
+    {
+        CopyToAppData();
+        var existingOrigins = LoadExistingOrigins();
+        CreateManifest(extensionId, existingOrigins);
+        RegisterInRegistry(ChromeRegistryPath, ManifestPath);
+        RegisterInRegistry(EdgeRegistryPath, ManifestPath);
+    }
+
+    /// <summary>
+    /// Deinstalliert den Native Messaging Host vollstaendig
     /// </summary>
     public static void Uninstall()
     {
-        // Registry-Eintraege entfernen
         try
         {
             Registry.CurrentUser.DeleteSubKeyTree(ChromeRegistryPath, false);
-            Console.WriteLine("Chrome Registry-Eintrag entfernt");
+            Console.WriteLine("  Chrome Registry-Eintrag entfernt");
         }
-        catch { /* Ignorieren wenn nicht vorhanden */ }
+        catch { }
 
         try
         {
             Registry.CurrentUser.DeleteSubKeyTree(EdgeRegistryPath, false);
-            Console.WriteLine("Edge Registry-Eintrag entfernt");
+            Console.WriteLine("  Edge Registry-Eintrag entfernt");
         }
-        catch { /* Ignorieren wenn nicht vorhanden */ }
+        catch { }
 
-        // Manifest-Datei entfernen
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var manifestPath = Path.Combine(appData, "GyazoDumper", $"{HostName}.json");
-        
-        if (File.Exists(manifestPath))
+        if (Directory.Exists(AppDataDir))
         {
-            File.Delete(manifestPath);
-            Console.WriteLine($"Manifest entfernt: {manifestPath}");
+            try
+            {
+                Directory.Delete(AppDataDir, true);
+                Console.WriteLine($"  Ordner entfernt: {AppDataDir}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Ordner konnte nicht vollstaendig entfernt werden: {ex.Message}");
+            }
         }
     }
 
     /// <summary>
-    /// Erstellt das Native Messaging Manifest
+    /// Kopiert die aktuelle EXE nach %APPDATA%\GyazoDumper\
     /// </summary>
-    private static string CreateManifest(string exePath)
+    private static void CopyToAppData()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var manifestDir = Path.Combine(appData, "GyazoDumper");
-        Directory.CreateDirectory(manifestDir);
+        Directory.CreateDirectory(AppDataDir);
+
+        var currentExe = Environment.ProcessPath
+            ?? throw new InvalidOperationException("Konnte Anwendungspfad nicht ermitteln");
+
+        // Nur kopieren wenn wir nicht bereits aus AppData laufen
+        var normalizedCurrent = Path.GetFullPath(currentExe).ToLowerInvariant();
+        var normalizedTarget = Path.GetFullPath(InstalledExePath).ToLowerInvariant();
+
+        if (normalizedCurrent != normalizedTarget)
+        {
+            File.Copy(currentExe, InstalledExePath, overwrite: true);
+        }
+    }
+
+    /// <summary>
+    /// Laedt bereits registrierte allowed_origins aus einem bestehenden Manifest
+    /// </summary>
+    private static List<string> LoadExistingOrigins()
+    {
+        if (!File.Exists(ManifestPath))
+            return new List<string>();
+
+        try
+        {
+            var json = File.ReadAllText(ManifestPath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                PropertyNameCaseInsensitive = true
+            };
+            var existing = JsonSerializer.Deserialize<NativeMessagingManifest>(json, options);
+            if (existing?.AllowedOrigins != null)
+                return new List<string>(existing.AllowedOrigins);
+        }
+        catch { }
+
+        return new List<string>();
+    }
+
+    /// <summary>
+    /// Erstellt das Native Messaging Manifest inkl. allowed_origins
+    /// </summary>
+    private static void CreateManifest(string? extensionId, List<string> existingOrigins)
+    {
+        var allowedOrigins = new List<string>(existingOrigins);
+
+        if (!string.IsNullOrEmpty(extensionId))
+        {
+            var origin = $"chrome-extension://{extensionId}/";
+            if (!allowedOrigins.Contains(origin))
+            {
+                allowedOrigins.Add(origin);
+            }
+        }
 
         var manifest = new NativeMessagingManifest
         {
             Name = HostName,
             Description = "GyazoDumper Native Messaging Host - Speichert Gyazo-Bilder an beliebigem Ort",
-            Path = exePath,
+            Path = InstalledExePath,
             Type = "stdio",
-            // Leeres Array - Benutzer muss Extension-ID manuell eintragen
-            // Format: "chrome-extension://<EXTENSION_ID>/"
-            AllowedOrigins = Array.Empty<string>()
+            AllowedOrigins = allowedOrigins.ToArray()
         };
-
-        var manifestPath = Path.Combine(manifestDir, $"{HostName}.json");
 
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
-        
+
         var json = JsonSerializer.Serialize(manifest, options);
-        File.WriteAllText(manifestPath, json);
-
-        // Hinweis fuer den Benutzer
-        Console.WriteLine();
-        Console.WriteLine("WICHTIG: Extension-ID eintragen!");
-        Console.WriteLine("----------------------------------------");
-        Console.WriteLine("1. Oeffne chrome://extensions/");
-        Console.WriteLine("2. Finde die GyazoDumper Extension");
-        Console.WriteLine("3. Kopiere die Extension-ID");
-        Console.WriteLine($"4. Oeffne: {manifestPath}");
-        Console.WriteLine("5. Trage die ID in 'allowed_origins' ein:");
-        Console.WriteLine("   \"chrome-extension://DEINE_EXTENSION_ID/\"");
-        Console.WriteLine();
-
-        return manifestPath;
+        File.WriteAllText(ManifestPath, json);
     }
 
     /// <summary>
-    /// Erstellt einen Registry-Eintrag
+    /// Erstellt einen Registry-Eintrag fuer den Native Messaging Host
     /// </summary>
     private static void RegisterInRegistry(string registryPath, string manifestPath)
     {
         using var key = Registry.CurrentUser.CreateSubKey(registryPath);
         key?.SetValue("", manifestPath);
+    }
+
+    private static void WriteOk()
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine(" OK");
+        Console.ResetColor();
+    }
+
+    private static void WriteFail(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(" FEHLER");
+        Console.WriteLine($"  {message}");
+        Console.ResetColor();
+    }
+
+    private static void WaitAndExit()
+    {
+        Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
+        Console.ReadKey(true);
     }
 }
 

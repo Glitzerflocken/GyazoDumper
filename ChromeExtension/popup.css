@@ -1,0 +1,313 @@
+body {
+  width: 380px;
+  padding: 12px;
+  font-family: Segoe UI, Arial, sans-serif;
+  font-size: 13px;
+  color: #222;
+  background: #f9f9f9;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px 0;
+  color: #1a73e8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h1 img {
+  width: 24px;
+  height: 24px;
+}
+h2 {
+  font-size: 13px;
+  margin: 16px 0 6px 0;
+  color: #555;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.Zielordner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#inputZielordner {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: Consolas, monospace;
+  box-sizing: border-box;
+}
+#inputZielordner:focus {
+  border-color: #1a73e8;
+  outline: none;
+}
+#inputZielordner:disabled {
+  background: #e0e0e0;
+  color: #888;
+}
+#btnSave {
+  align-self: flex-end;
+  padding: 6px 16px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+#btnSave:hover {
+  background: #1558b0;
+}
+#btnSave:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+#status {
+  font-size: 11px;
+  min-height: 16px;
+  color: #2e7d32;
+}
+#status.error {
+  color: #c62828;
+}
+.btn-action {
+  padding: 6px 16px;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+#btnExport {
+  background: #2e7d32;
+}
+#btnExport:hover {
+  background: #1b5e20;
+}
+#btnReset {
+  background: #c62828;
+}
+#btnReset:hover {
+  background: #8e0000;
+}
+.id-count {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+/* Toggle Switch */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: .3s;
+  border-radius: 24px;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #1a73e8;
+}
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+.toggle-label {
+  font-size: 12px;
+  color: #333;
+}
+.toggle-description {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Desktop App Section */
+.desktop-app-section {
+  background: #f0f4ff;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 8px;
+}
+.desktop-app-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  margin-top: 8px;
+}
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+}
+.status-indicator.connected {
+  background: #4caf50;
+}
+.status-indicator.disconnected {
+  background: #f44336;
+}
+.status-indicator.checking {
+  background: #ff9800;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+#btnInstallApp {
+  background: #7c4dff;
+  margin-top: 8px;
+}
+#btnInstallApp:hover {
+  background: #651fff;
+}
+.install-hint {
+  font-size: 10px;
+  color: #666;
+  margin-top: 6px;
+}
+
+/* Desktop Zielordner */
+#inputDesktopZielordner {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: Consolas, monospace;
+  box-sizing: border-box;
+  margin-top: 8px;
+}
+#inputDesktopZielordner:focus {
+  border-color: #1a73e8;
+  outline: none;
+}
+
+/* Extension-ID Anzeige */
+.extension-id-box {
+  background: #fff;
+  border: 1px dashed #1a73e8;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.extension-id-box code {
+  flex: 1;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  color: #1a73e8;
+  word-break: break-all;
+  user-select: all;
+}
+.btn-copy {
+  padding: 4px 10px;
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.btn-copy:hover {
+  background: #ccc;
+}
+.btn-copy.copied {
+  background: #4caf50;
+  color: #fff;
+}
+
+/* Install Steps */
+.install-steps {
+  font-size: 11px;
+  color: #555;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+.install-steps ol {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+}
+.install-steps li {
+  margin-bottom: 2px;
+}
+
+/* Confirmation Overlay */
+#confirmOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10;
+  justify-content: center;
+  align-items: center;
+}
+#confirmOverlay.visible {
+  display: flex;
+}
+#confirmBox {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+#confirmBox p {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+}
+#confirmBox button {
+  padding: 6px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin: 0 4px;
+}
+#btnConfirmYes {
+  background: #c62828;
+  color: #fff;
+}
+#btnConfirmNo {
+  background: #e0e0e0;
+  color: #222;
+}
