@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>GyazoDumper-Setup</AssemblyName>
+    <RootNamespace>GyazoDumper.Setup</RootNamespace>
+
+    <!-- Fuer Single-File Deployment -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <!-- Groessen-Optimierung -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Application Icon -->
+    <ApplicationIcon>..\Application\GyazoDumper.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!--
+    Payload: Die publishte GyazoDumper.exe wird als Resource eingebettet.
+    WICHTIG: Vor dem Build des Setups muss die Application gepublisht werden:
+      cd Application && dotnet publish -c Release
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Application\bin\Release\net10.0-windows\win-x64\publish\GyazoDumper.exe"
+                      LogicalName="Payload.GyazoDumper.exe"
+                      Condition="Exists('..\Application\bin\Release\net10.0-windows\win-x64\publish\GyazoDumper.exe')" />
+  </ItemGroup>
+
+  <!-- Browser-Extension Dateien als separate Payload -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\BrowserExtension\manifest.json" LogicalName="Extension.manifest.json" />
+    <EmbeddedResource Include="..\BrowserExtension\Content.js" LogicalName="Extension.Content.js" />
+    <EmbeddedResource Include="..\BrowserExtension\background.js" LogicalName="Extension.background.js" />
+    <EmbeddedResource Include="..\BrowserExtension\SettingsPopup.html" LogicalName="Extension.SettingsPopup.html" />
+    <EmbeddedResource Include="..\BrowserExtension\popup.js" LogicalName="Extension.popup.js" />
+    <EmbeddedResource Include="..\BrowserExtension\popup.css" LogicalName="Extension.popup.css" />
+    <EmbeddedResource Include="..\BrowserExtension\GyazoDumper.png" LogicalName="Extension.GyazoDumper.png" />
+  </ItemGroup>
+
+</Project>

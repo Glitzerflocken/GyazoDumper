@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>GyazoDumper-Setup-SFX</AssemblyName>
+    <RootNamespace>GyazoDumper.SetupSFX</RootNamespace>
+
+    <!-- Fuer Single-File Deployment -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <!-- Groessen-Optimierung -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Application Icon -->
+    <ApplicationIcon>..\Application\GyazoDumper.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!--
+    Build-Ablauf fuer das SFX-Archiv:
+    1. cd Application && dotnet publish -c Release
+    2. cd SetupSFX && dotnet publish -c Release
+    
+    Der Pre-Build Target erstellt automatisch eine payload.zip aus:
+    - Der publishten GyazoDumper.exe
+    - Allen BrowserExtension-Dateien
+  -->
+
+  <!-- Pre-Build: ZIP-Archiv aus allen Payload-Dateien erstellen -->
+  <Target Name="CreatePayloadArchive" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <PayloadZipPath>$(MSBuildProjectDirectory)\payload.zip</PayloadZipPath>
+      <PayloadStagingDir>$(MSBuildProjectDirectory)\obj\payload-staging</PayloadStagingDir>
+      <AppPublishDir>$(MSBuildProjectDirectory)\..\Application\bin\Release\net10.0-windows\win-x64\publish</AppPublishDir>
+      <ExtensionDir>$(MSBuildProjectDirectory)\..\BrowserExtension</ExtensionDir>
+    </PropertyGroup>
+
+    <!-- Staging-Ordner vorbereiten -->
+    <RemoveDir Directories="$(PayloadStagingDir)" />
+    <MakeDir Directories="$(PayloadStagingDir)" />
+    <MakeDir Directories="$(PayloadStagingDir)\BrowserExtension" />
+
+    <!-- Dateien in Staging kopieren -->
+    <Copy SourceFiles="$(AppPublishDir)\GyazoDumper.exe"
+          DestinationFiles="$(PayloadStagingDir)\GyazoDumper.exe"
+          Condition="Exists('$(AppPublishDir)\GyazoDumper.exe')" />
+
+    <Copy SourceFiles="$(ExtensionDir)\manifest.json;$(ExtensionDir)\Content.js;$(ExtensionDir)\background.js;$(ExtensionDir)\SettingsPopup.html;$(ExtensionDir)\popup.js;$(ExtensionDir)\popup.css;$(ExtensionDir)\GyazoDumper.png"
+          DestinationFolder="$(PayloadStagingDir)\BrowserExtension" />
+
+    <!-- ZIP erstellen (alte loeschen falls vorhanden) -->
+    <Delete Files="$(PayloadZipPath)" Condition="Exists('$(PayloadZipPath)')" />
+    <ZipDirectory SourceDirectory="$(PayloadStagingDir)"
+                  DestinationFile="$(PayloadZipPath)"
+                  Overwrite="true" />
+
+    <!-- Staging aufraeumen -->
+    <RemoveDir Directories="$(PayloadStagingDir)" />
+  </Target>
+
+  <!-- Das erstellte ZIP als Embedded Resource einbetten -->
+  <ItemGroup>
+    <EmbeddedResource Include="payload.zip"
+                      LogicalName="Payload.zip"
+                      Condition="Exists('payload.zip')" />
+  </ItemGroup>
+
+  <!-- payload.zip nicht ins Git einchecken -->
+  <Target Name="CleanPayload" AfterTargets="Clean">
+    <Delete Files="$(MSBuildProjectDirectory)\payload.zip" />
+  </Target>
+
+</Project>

@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>GyazoDumper-Setup</AssemblyName>
+    <RootNamespace>GyazoDumper.Bootstrapper</RootNamespace>
+
+    <!-- Setup muss self-contained sein — laeuft auf Systemen OHNE .NET -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <!-- Aggressive Groessen-Optimierung fuer den Bootstrapper -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Icon -->
+    <ApplicationIcon>..\Application\GyazoDumper.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!--
+    Ansatz C: Bootstrapper + .NET Runtime
+    
+    Die eingebettete GyazoDumper.exe ist framework-dependent (~1 MB statt 12.5 MB).
+    Der Bootstrapper prueft ob .NET 10 installiert ist und laedt die Runtime
+    bei Bedarf von Microsoft herunter.
+    
+    Build-Reihenfolge:
+      1. cd Application
+         dotnet publish -c Release -p:SelfContained=false -p:PublishSingleFile=true ^
+           -p:PublishTrimmed=false -p:EnableCompressionInSingleFile=false ^
+           -o bin\Release\framework-dependent
+      2. cd SetupBootstrapper
+         dotnet publish -c Release
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Application\bin\Release\framework-dependent\GyazoDumper.exe"
+                      LogicalName="Payload.GyazoDumper.exe"
+                      Condition="Exists('..\Application\bin\Release\framework-dependent\GyazoDumper.exe')" />
+  </ItemGroup>
+
+  <!-- Browser-Extension Dateien -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\BrowserExtension\manifest.json" LogicalName="Extension.manifest.json" />
+    <EmbeddedResource Include="..\BrowserExtension\Content.js" LogicalName="Extension.Content.js" />
+    <EmbeddedResource Include="..\BrowserExtension\background.js" LogicalName="Extension.background.js" />
+    <EmbeddedResource Include="..\BrowserExtension\SettingsPopup.html" LogicalName="Extension.SettingsPopup.html" />
+    <EmbeddedResource Include="..\BrowserExtension\popup.js" LogicalName="Extension.popup.js" />
+    <EmbeddedResource Include="..\BrowserExtension\popup.css" LogicalName="Extension.popup.css" />
+    <EmbeddedResource Include="..\BrowserExtension\GyazoDumper.png" LogicalName="Extension.GyazoDumper.png" />
+  </ItemGroup>
+
+</Project>
