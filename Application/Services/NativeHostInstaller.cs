@@ -340,7 +340,7 @@ public static class NativeHostInstaller
             try
             {
                 proc.Kill();
-                proc.WaitForExit(3000);
+                proc.WaitForExit(2900);
                 Console.WriteLine($"  Native Host Prozess beendet (PID {proc.Id})");
             }
             catch { }
