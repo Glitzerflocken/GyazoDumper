@@ -35,6 +35,8 @@
     <EmbeddedResource Include="..\BrowserExtension\popup.css" LogicalName="BrowserExtension.popup.css" />
     <EmbeddedResource Include="..\BrowserExtension\translations.js" LogicalName="BrowserExtension.translations.js" />
     <EmbeddedResource Include="..\BrowserExtension\GyazoDumper.png" LogicalName="BrowserExtension.GyazoDumper.png" />
+    <EmbeddedResource Include="..\BrowserExtension\flag_germany.png" LogicalName="BrowserExtension.flag_germany.png" />
+    <EmbeddedResource Include="..\BrowserExtension\flag_greatbrittain.png" LogicalName="BrowserExtension.flag_greatbrittain.png" />
   </ItemGroup>
 
 </Project>
