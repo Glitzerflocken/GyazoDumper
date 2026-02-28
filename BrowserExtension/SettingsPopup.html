@@ -5,19 +5,25 @@
 	<link rel="stylesheet" href="popup.css">
   </head>
   <body>
-	<h1><img src="GyazoDumper.png" alt="">Gyazo Dumper <a href="https://github.com/Glitzerflocken/GyazoDumper" id="githubLink" target="_blank">view on GitHub</a></h1>
+	<h1><img src="GyazoDumper.png" alt="">Gyazo Dumper <a href="https://github.com/Glitzerflocken/GyazoDumper" id="githubLink" target="_blank" data-i18n="viewOnGithub">view on GitHub</a></h1>
 	<div class="Optionen">
 
+	  <!-- Language Switcher -->
+	  <div class="lang-switcher">
+		<button class="lang-btn" id="btnLangDe" title="Deutsch">DE</button>
+		<button class="lang-btn" id="btnLangEn" title="English">EN</button>
+	  </div>
+
 	  <!-- Desktop App Toggle -->
-	  <h2>Speichermodus</h2>
+	  <h2 data-i18n="saveMode">Save Mode</h2>
 	  <div class="toggle-container">
 		<label class="toggle-switch">
 		  <input type="checkbox" id="toggleDesktopApp">
 		  <span class="toggle-slider"></span>
 		</label>
 		<div>
-		  <span class="toggle-label">Desktop-App verwenden</span>
-		  <div class="toggle-description">Speichert Bilder an beliebigem Ort (erfordert Installation)</div>
+		  <span class="toggle-label" data-i18n="useDesktopApp">Use Desktop App</span>
+		  <div class="toggle-description" data-i18n="useDesktopAppDesc">Saves images to any location (requires installation)</div>
 		</div>
 	  </div>
 
@@ -25,68 +31,69 @@
 		<div class="desktop-app-section" id="desktopAppSection" style="display: none;">
 		  <div class="desktop-app-status">
 			<span class="status-indicator" id="appStatusIndicator"></span>
-			<span id="appStatusText">Status wird geprueft...</span>
+			<span id="appStatusText" data-i18n="statusChecking">Checking connection...</span>
 		  </div>
 		  <div style="margin-top: 8px;">
-			<label style="font-size: 11px; color: #555;">Zielordner (vollstaendiger Pfad):</label>
-			<input type="text" id="inputDesktopZielordner" placeholder="Wird bei Installation festgelegt" readonly>
+			<label style="font-size: 11px; color: #555;" data-i18n="targetFolderLabel">Target folder (full path):</label>
+			<input type="text" id="inputDesktopZielordner" data-i18n-placeholder="targetFolderPlaceholder" placeholder="Set during installation" readonly>
 		  </div>
 		  <div class="path-buttons">
-			<button class="btn-action" id="btnBrowseFolder" style="background: #555;">Ordner ausw&auml;hlen</button>
-			<button class="btn-action" id="btnOpenFolder" style="background: #555;">Ordner &ouml;ffnen</button>
+			<button class="btn-action" id="btnBrowseFolder" style="background: #555;" data-i18n="btnBrowseFolder">Browse folder</button>
+			<button class="btn-action" id="btnOpenFolder" style="background: #555;" data-i18n="btnOpenFolder">Open folder</button>
 		  </div>
 
 		  <!-- Installation: klappbar, offen wenn nicht verbunden -->
 		  <details id="installDetails" class="install-details">
-			<summary class="install-summary">Desktop-App installieren</summary>
+			<summary class="install-summary" data-i18n="installTitle">Install Desktop App</summary>
 			<div class="install-content">
 			  <div class="install-steps">
 				<ol>
-				  <li>Klicke auf <em>Setup herunterladen</em></li>
-				  <li>Starte die heruntergeladene Datei</li>
-				  <li>Gib dort diese Extension-ID ein:</li>
+				  <li data-i18n="installStep1">Click <em>Download Setup</em></li>
+				  <li data-i18n="installStep2">Run the downloaded file</li>
+				  <li data-i18n="installStep3">Enter this Extension ID there:</li>
 				</ol>
 			  </div>
 			  <div class="extension-id-box">
 				<code id="extensionId"></code>
-				<button class="btn-copy" id="btnCopyId">Kopieren</button>
+				<button class="btn-copy" id="btnCopyId" data-i18n="btnCopy">Copy</button>
 			  </div>
-			  <button class="btn-action" id="btnInstallApp">Setup herunterladen</button>
+			  <button class="btn-action" id="btnInstallApp" data-i18n="btnDownloadSetup">Download Setup</button>
 			</div>
 		  </details>
 		</div>
 
 	  <!-- Browser Zielordner (nur wenn Desktop-App deaktiviert) -->
 	  <div id="browserZielordnerSection">
-		<p style="text-align: center; padding: 0 20px;">Wegen Browserlimitierungen ist das automatische Speichern von Dateien aus dem Netz nur im festgelegten Download Ordner m&ouml;glich.<br /><br />Mit der Installation der Desktop-App kann diese Limitierung umgangen werden und ein beliebiger Ort auf der Festplatte gew&auml;hlt werden.</p>
-		<h2>Ordnername</h2>
+		<p style="text-align: center; padding: 0 20px;" data-i18n="browserLimitation">Due to browser limitations, automatic file saving from the web is only possible in the designated download folder.<br><br>By installing the Desktop App, this limitation can be bypassed and any location on your hard drive can be chosen.</p>
+		<h2 data-i18n="folderName">Folder Name</h2>
 		<div class="Zielordner">
-		  <input type="text" id="inputZielordner" placeholder="z.B. GyazooDumper">
-		  <button id="btnSave">Speichern</button>
+		  <input type="text" id="inputZielordner" data-i18n-placeholder="folderPlaceholder" placeholder="e.g. GyazoDumps">
+		  <button id="btnSave" data-i18n="btnSave">Save</button>
 		  <span id="status"></span>
 		</div>
 	  </div>
 
-	  <h2>Dump saved IDs to File</h2>
+	  <h2 data-i18n="exportTitle">Dump saved IDs to File</h2>
 	  <div>
-		<button class="btn-action" id="btnExport">IDs exportieren</button>
-		<span class="id-count" id="idCount">0 IDs gespeichert</span>
+		<button class="btn-action" id="btnExport" data-i18n="btnExport">Export IDs</button>
+		<span class="id-count" id="idCount">0 IDs saved</span>
 	  </div>
-	  <h2>Reset saved IDs</h2>
+	  <h2 data-i18n="resetTitle">Reset saved IDs</h2>
 	  <div>
-		<button class="btn-action" id="btnReset">Alle IDs loeschen</button>
+		<button class="btn-action" id="btnReset" data-i18n="btnReset">Delete all IDs</button>
 	  </div>
 	</div>
 
 	<!-- Confirmation Overlay -->
 	<div id="confirmOverlay">
 	  <div id="confirmBox">
-		<p>Alle gespeicherten IDs wirklich loeschen?<br>Dies kann nicht rueckgaengig gemacht werden!</p>
-		<button id="btnConfirmYes">Ja, loeschen</button>
-		<button id="btnConfirmNo">Abbrechen</button>
+		<p data-i18n="confirmReset">Really delete all saved IDs?<br>This cannot be undone!</p>
+		<button id="btnConfirmYes" data-i18n="btnConfirmYes">Yes, delete</button>
+		<button id="btnConfirmNo" data-i18n="btnConfirmNo">Cancel</button>
 	  </div>
 	</div>
 
+	<script src="translations.js"></script>
 	<script src="popup.js"></script>
   </body>
 </html>

@@ -5,16 +5,16 @@
 <h1 align="center">GyazoDumper</h1>
 
 <p align="center">
-  Browser-Extension die automatisch jedes Gyazo-Bild herunterlädt das du öffnest — direkt auf deine Festplatte.
+  A browser extension that automatically downloads every Gyazo image you open — straight to your hard drive.
 </p>
 
 <p align="center">
   <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe">
-    <img src="https://img.shields.io/badge/⬇_Desktop--App-7c4dff?style=for-the-badge&logoColor=white" alt="Desktop-App herunterladen" height="36">
+    <img src="https://img.shields.io/badge/⬇_Desktop--App-7c4dff?style=for-the-badge&logoColor=white" alt="Download Desktop App" height="36">
   </a>
   &nbsp;
   <a href="https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/BrowserExtension.zip">
-    <img src="https://img.shields.io/badge/⬇_Browser--Extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Browser Extension herunterladen" height="36">
+    <img src="https://img.shields.io/badge/⬇_Browser--Extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Download Browser Extension" height="36">
   </a>
 </p>
 
@@ -28,91 +28,91 @@
 
 ---
 
-## Was ist GyazoDumper?
+## What is GyazoDumper?
 
-**GyazoDumper** ist eine Browser-Extension für Chrome und Edge die erkennt wenn du eine [Gyazo](https://gyazo.com)-Bildseite öffnest und das Bild automatisch im Hintergrund herunterlädt — ohne dass du irgendetwas klicken musst.
+**GyazoDumper** is a browser extension for Chrome and Edge that detects when you open a [Gyazo](https://gyazo.com) image page and automatically downloads the image in the background — without you having to click anything.
 
-### Das Problem
+### The Problem
 
-Gyazo speichert Screenshots in der Cloud. Wenn du ein Bild lokal sichern willst, musst du jedes Mal manuell „Rechtsklick → Speichern unter" machen. Bei vielen Bildern wird das schnell lästig.
+Gyazo stores screenshots in the cloud. If you want to save an image locally, you have to manually "Right-click → Save as" every time. With many images, this quickly becomes tedious.
 
-### Die Lösung
+### The Solution
 
-Installiere die Extension, öffne eine Gyazo-Seite — fertig. Das Bild landet automatisch auf deiner Festplatte. Jedes Bild wird nur einmal heruntergeladen, auch wenn du die Seite mehrfach besuchst.
+Install the extension, open a Gyazo page — done. The image is automatically saved to your hard drive. Each image is only downloaded once, even if you visit the page multiple times.
 
 ---
 
-## Zwei Modi
+## Two Modes
 
-| | **Browser-Modus** | **Desktop-App-Modus** |
+| | **Browser Mode** | **Desktop App Mode** |
 |---|---|---|
-| **Speicherort** | Unterordner im Download-Verzeichnis | Beliebiger Ordner auf der Festplatte |
-| **Benötigt** | Nur die Extension | Extension + Desktop-App |
-| **Einrichtung** | Sofort einsatzbereit | Setup-EXE einmalig starten |
+| **Save location** | Subfolder in the download directory | Any folder on the hard drive |
+| **Requires** | Only the extension | Extension + Desktop App |
+| **Setup** | Ready to use immediately | Run setup EXE once |
 
 ---
 
 ## Installation
 
-### Browser-Extension
+### Browser Extension
 
-1. [BrowserExtension.zip herunterladen](https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/BrowserExtension.zip) und entpacken
-2. `chrome://extensions/` öffnen (Chrome) oder `edge://extensions/` (Edge)
-3. **Entwicklermodus** aktivieren (Schalter oben rechts)
-4. **Entpackte Erweiterung laden** → den entpackten Ordner auswählen
-5. Fertig — die Extension erscheint in der Toolbar
+1. [Download BrowserExtension.zip](https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/BrowserExtension.zip) and extract
+2. Open `chrome://extensions/` (Chrome) or `edge://extensions/` (Edge)
+3. Enable **Developer mode** (toggle in the top right)
+4. Click **Load unpacked** → select the extracted folder
+5. Done — the extension appears in the toolbar
 
-> Im **Browser-Modus** funktioniert alles sofort. Die Bilder werden im Download-Ordner unter einem konfigurierbaren Unterordner gespeichert.
+> In **Browser Mode** everything works immediately. Images are saved in the download folder under a configurable subfolder.
 
 📖 **Details:** [BrowserExtension/README.md](BrowserExtension/README.md)
 
-### Desktop-App (Optional)
+### Desktop App (Optional)
 
-> Die Desktop-App hebt die Browser-Limitierung auf und erlaubt das Speichern an einem **beliebigen Ort** auf der Festplatte.
+> The Desktop App removes the browser limitation and allows saving to **any location** on the hard drive.
 
-1. [GyazoDumper-Setup.exe herunterladen](https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe)
-2. Starte die EXE per Doppelklick
-3. Gib die im Extension-Popup angezeigte **Extension-ID** ein
-4. Starte den Browser neu
+1. [Download GyazoDumper-Setup.exe](https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe)
+2. Run the EXE by double-clicking
+3. Enter the **Extension ID** shown in the extension popup
+4. Restart the browser
 
 📖 **Details:** [Application/README.md](Application/README.md)
 
 ---
 
-## Technischer Ablauf
+## Technical Flow
 
 ```
-Gyazo-Seite öffnen
+Open Gyazo page
        │
        ▼
 ┌─────────────────────┐
-│    Content Script    │  Erkennt gyazo.com/[32-hex-ID] im URL
-│    (Content.js)      │  Liest die Bild-URL aus dem DOM
+│    Content Script    │  Detects gyazo.com/[32-hex-ID] in URL
+│    (Content.js)      │  Reads the image URL from the DOM
 └────────┬────────────┘
          │ chrome.runtime.sendMessage
          ▼
 ┌─────────────────────┐
-│  Background Worker   │  Prüft ob das Bild schon heruntergeladen wurde
-│  (background.js)     │  Speichert die ID zur Duplikat-Erkennung
+│  Background Worker   │  Checks if the image was already downloaded
+│  (background.js)     │  Saves the ID for duplicate detection
 └────────┬────────────┘
          │
     ┌────┴────┐
     ▼         ▼
-Browser    Desktop-App
- Modus       Modus
+ Browser   Desktop App
+  Mode       Mode
     │         │
     ▼         ▼
-Downloads  Beliebiger
- Ordner      Ordner
+Downloads   Any
+ Folder    Folder
 ```
 
 ---
 
-## Deinstallation
+## Uninstall
 
-**Extension:** Über `chrome://extensions/` entfernen.
+**Extension:** Remove via `chrome://extensions/`.
 
-**Desktop-App:**
+**Desktop App:**
 ```powershell
 "%APPDATA%\GyazoDumper\GyazoDumper.exe" --uninstall
 ```

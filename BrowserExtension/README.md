@@ -1,49 +1,50 @@
-# GyazoDumper — Browser-Extension
+# GyazoDumper — Browser Extension
 
-Chrome/Edge Extension die automatisch Gyazo-Bilder herunterlädt.
+Chrome/Edge extension that automatically downloads Gyazo images.
 
-## Funktionsweise
+## How It Works
 
-Wenn du eine Gyazo-Bildseite (`gyazo.com/[32-hex-ID]`) öffnest, erkennt die Extension das automatisch:
+When you open a Gyazo image page (`gyazo.com/[32-hex-ID]`), the extension detects it automatically:
 
-1. **Content Script** (`Content.js`) liest die Bild-URL aus dem DOM
-2. **Background Worker** (`background.js`) prüft auf Duplikate und lädt das Bild herunter
-3. Je nach Modus wird das Bild per `chrome.downloads` API oder über den Native Messaging Host gespeichert
+1. **Content Script** (`Content.js`) reads the image URL from the DOM
+2. **Background Worker** (`background.js`) checks for duplicates and downloads the image
+3. Depending on the mode, the image is saved via the `chrome.downloads` API or through the Native Messaging Host
 
-### SPA-Navigation
+### SPA Navigation
 
-Gyazo nutzt React mit `history.pushState` für die Pfeil-Navigation zwischen Bildern. Da Content Scripts in einer isolierten Welt laufen, kann `pushState` nicht direkt abgefangen werden. Stattdessen wird **URL-Polling** (alle 500ms) verwendet um Navigationen zuverlässig zu erkennen.
+Gyazo uses React with `history.pushState` for arrow navigation between images. Since Content Scripts run in an isolated world, `pushState` cannot be intercepted directly. Instead, **URL polling** (every 500ms) is used to reliably detect navigations.
 
-## Zwei Modi
+## Two Modes
 
-| | **Browser-Modus** | **Desktop-App-Modus** |
+| | **Browser Mode** | **Desktop App Mode** |
 |---|---|---|
-| Speicherort | Unterordner im Download-Verzeichnis | Beliebiger Ordner auf der Festplatte |
-| Benötigt | Nur die Extension | Extension + Desktop-App |
-| Einrichtung | Sofort einsatzbereit | Setup-EXE einmalig starten |
+| Save location | Subfolder in the download directory | Any folder on the hard drive |
+| Requires | Only the extension | Extension + Desktop App |
+| Setup | Ready to use immediately | Run setup EXE once |
 
 ## Installation
 
-1. `chrome://extensions/` öffnen (Chrome) oder `edge://extensions/` (Edge)
-2. **Entwicklermodus** aktivieren (Schalter oben rechts)
-3. **Entpackte Erweiterung laden** → diesen Ordner auswählen
-4. Fertig — die Extension erscheint in der Toolbar
+1. Open `chrome://extensions/` (Chrome) or `edge://extensions/` (Edge)
+2. Enable **Developer mode** (toggle in the top right)
+3. Click **Load unpacked** → select this folder
+4. Done — the extension appears in the toolbar
 
-## Dateistruktur
+## File Structure
 
-| Datei | Beschreibung |
+| File | Description |
 |---|---|
-| `manifest.json` | Extension-Konfiguration (Manifest V3) |
-| `Content.js` | Content Script — läuft auf gyazo.com, liest Bild-URLs |
-| `background.js` | Service Worker — Download-Logik, Native Messaging |
-| `SettingsPopup.html` | Popup-UI für Einstellungen |
-| `popup.js` | Popup-Logik |
-| `popup.css` | Popup-Styles |
-| `GyazoDumper.png` | Extension-Icon |
+| `manifest.json` | Extension configuration (Manifest V3) |
+| `Content.js` | Content Script — runs on gyazo.com, reads image URLs |
+| `background.js` | Service Worker — download logic, Native Messaging |
+| `SettingsPopup.html` | Popup UI for settings |
+| `popup.js` | Popup logic |
+| `popup.css` | Popup styles |
+| `translations.js` | i18n — German/English translations |
+| `GyazoDumper.png` | Extension icon |
 
 ## Permissions
 
-- `activeTab` — Zugriff auf die aktive Gyazo-Seite
-- `downloads` — Bilder im Browser-Modus herunterladen
-- `storage` — Einstellungen und heruntergeladene IDs speichern
-- `nativeMessaging` — Kommunikation mit der Desktop-App
+- `activeTab` — Access to the active Gyazo page
+- `downloads` — Download images in browser mode
+- `storage` — Save settings and downloaded IDs
+- `nativeMessaging` — Communication with the Desktop App

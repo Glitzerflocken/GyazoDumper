@@ -9,6 +9,7 @@
  *   - Setup-Download direkt aus dem Popup starten
  *   - Gespeicherte IDs als Textdatei exportieren (saveAs-Dialog)
  *   - Alle gespeicherten IDs loeschen (mit Bestaetigungsdialog)
+ *   - Sprachumschaltung DE/EN
  */
 
 // Standard-Zielordner (Unterordner im Chrome-Download-Verzeichnis)
@@ -41,6 +42,31 @@ const extensionIdEl = document.getElementById("extensionId");
 const inputDesktopZielordner = document.getElementById("inputDesktopZielordner");
 const btnBrowseFolder = document.getElementById("btnBrowseFolder");
 const btnOpenFolder = document.getElementById("btnOpenFolder");
+
+// Sprach-Buttons
+const btnLangDe = document.getElementById("btnLangDe");
+const btnLangEn = document.getElementById("btnLangEn");
+
+// ============================================================================
+//  Sprache
+// ============================================================================
+
+function updateLangButtons() {
+    btnLangDe.classList.toggle("active", currentLang === "de");
+    btnLangEn.classList.toggle("active", currentLang === "en");
+}
+
+btnLangDe.addEventListener("click", () => {
+    setLanguage("de");
+    updateLangButtons();
+    updateIdCount();
+});
+
+btnLangEn.addEventListener("click", () => {
+    setLanguage("en");
+    updateLangButtons();
+    updateIdCount();
+});
 
 // ============================================================================
 //  Extension-ID anzeigen
@@ -79,15 +105,15 @@ async function saveSettings() {
     const pfad = inputZielordner.value.trim();
 
     if (!pfad) {
-        showStatus("Bitte einen Pfad eingeben.", true);
+        showStatus(t("statusEmptyPath"), true);
         return;
     }
 
     try {
         await chrome.storage.local.set({ zielordner: pfad });
-        showStatus("Gespeichert!");
+        showStatus(t("statusSaved"));
     } catch (error) {
-        showStatus("Fehler beim Speichern!", true);
+        showStatus(t("statusSaveError"), true);
     }
 }
 
@@ -116,16 +142,16 @@ async function toggleDesktopAppMode() {
             checkNativeHostStatus();
         }
 
-        showStatus(enabled ? "Desktop-App Modus aktiviert" : "Browser-Modus aktiviert");
+        showStatus(enabled ? t("statusDesktopOn") : t("statusDesktopOff"));
     } catch (error) {
-        showStatus("Fehler beim Umschalten!", true);
+        showStatus(t("statusToggleError"), true);
         toggleDesktopApp.checked = !enabled;
     }
 }
 
 async function checkNativeHostStatus() {
     appStatusIndicator.className = "status-indicator checking";
-    appStatusText.textContent = "Pr&uuml;fe Verbindung...";
+    appStatusText.textContent = t("statusChecking");
     installDetails.removeAttribute("open");
 
     try {
@@ -133,17 +159,17 @@ async function checkNativeHostStatus() {
 
         if (response.installed) {
             appStatusIndicator.className = "status-indicator connected";
-            appStatusText.textContent = "Desktop-App verbunden";
+            appStatusText.textContent = t("statusConnected");
             installDetails.removeAttribute("open");
             loadNativeConfig();
         } else {
             appStatusIndicator.className = "status-indicator disconnected";
-            appStatusText.textContent = "Desktop-App nicht gefunden";
+            appStatusText.textContent = t("statusNotFound");
             installDetails.setAttribute("open", "");
         }
     } catch (error) {
         appStatusIndicator.className = "status-indicator disconnected";
-        appStatusText.textContent = "Verbindungsfehler";
+        appStatusText.textContent = t("statusError");
         installDetails.setAttribute("open", "");
     }
 }
@@ -155,19 +181,19 @@ function downloadSetup() {
         saveAs: false
     }, (downloadId) => {
         if (chrome.runtime.lastError) {
-            showStatus("Download fehlgeschlagen!", true);
+            showStatus(t("statusDownloadFail"), true);
         } else {
-            showStatus("Setup wird heruntergeladen...");
+            showStatus(t("statusDownloading"));
         }
     });
 }
 
 function copyExtensionId() {
     navigator.clipboard.writeText(chrome.runtime.id).then(() => {
-        btnCopyId.textContent = "Kopiert!";
+        btnCopyId.textContent = t("btnCopied");
         btnCopyId.classList.add("copied");
         setTimeout(() => {
-            btnCopyId.textContent = "Kopieren";
+            btnCopyId.textContent = t("btnCopy");
             btnCopyId.classList.remove("copied");
         }, 2000);
     });
@@ -175,23 +201,23 @@ function copyExtensionId() {
 
 async function browseFolder() {
     btnBrowseFolder.disabled = true;
-    btnBrowseFolder.textContent = "Bitte waehlen...";
+    btnBrowseFolder.textContent = t("browsingFolder");
 
     try {
         const response = await chrome.runtime.sendMessage({ action: "browseFolder" });
 
         if (response.success) {
             inputDesktopZielordner.value = response.message;
-            showStatus("Neuer Zielpfad gespeichert: " + response.message);
+            showStatus(t("statusNewPath") + response.message);
         } else if (response.error !== "Abgebrochen") {
-            showStatus("Ordnerauswahl fehlgeschlagen.", true);
+            showStatus(t("statusBrowseFail"), true);
         }
     } catch (error) {
-        showStatus("Fehler bei Ordnerauswahl.", true);
+        showStatus(t("statusBrowseError"), true);
     }
 
     btnBrowseFolder.disabled = false;
-    btnBrowseFolder.textContent = "Wird ausgew&auml;hlt...";
+    btnBrowseFolder.textContent = t("btnBrowseFolder");
 }
 
 async function openFolder() {
@@ -199,10 +225,10 @@ async function openFolder() {
         const response = await chrome.runtime.sendMessage({ action: "openFolder" });
 
         if (!response.success) {
-            showStatus("Ordner konnte nicht geoeffnet werden.", true);
+            showStatus(t("statusOpenFail"), true);
         }
     } catch (error) {
-        showStatus("Fehler beim Oeffnen.", true);
+        showStatus(t("statusOpenError"), true);
     }
 }
 
@@ -226,9 +252,9 @@ async function updateIdCount() {
     try {
         const result = await chrome.storage.local.get("downloadedIds");
         const count = (result.downloadedIds || []).length;
-        idCountEl.textContent = `${count} IDs gespeichert`;
+        idCountEl.textContent = t("idCount", { count });
     } catch (error) {
-        idCountEl.textContent = "Fehler beim Laden";
+        idCountEl.textContent = t("statusIdLoadError");
     }
 }
 
@@ -242,7 +268,7 @@ async function exportIds() {
         const ids = result.downloadedIds || [];
 
         if (ids.length === 0) {
-            showStatus("Keine IDs zum Exportieren vorhanden.", true);
+            showStatus(t("statusNoIds"), true);
             return;
         }
 
@@ -259,15 +285,15 @@ async function exportIds() {
             (downloadId) => {
                 URL.revokeObjectURL(blobUrl);
                 if (chrome.runtime.lastError) {
-                    showStatus("Export fehlgeschlagen!", true);
+                    showStatus(t("statusExportFail"), true);
                 } else {
-                    showStatus(`${ids.length} IDs exportiert!`);
+                    showStatus(t("statusExported", { count: ids.length }));
                 }
             }
         );
     } catch (error) {
-        showStatus("Export fehlgeschlagen!", true);
-    }
+        showStatus(t("statusExportFail"), true);
+        }
 }
 
 // ============================================================================
@@ -287,10 +313,10 @@ async function resetIds() {
 
     try {
         await chrome.storage.local.set({ downloadedIds: [] });
-        showStatus("Alle IDs geloescht!");
+        showStatus(t("statusResetDone"));
         updateIdCount();
     } catch (error) {
-        showStatus("Fehler beim Loeschen!", true);
+        showStatus(t("statusResetError"), true);
     }
 }
 
@@ -328,6 +354,9 @@ btnCopyId.addEventListener("click", copyExtensionId);
 btnBrowseFolder.addEventListener("click", browseFolder);
 btnOpenFolder.addEventListener("click", openFolder);
 
-// Beim Oeffnen des Popups: Einstellungen und ID-Zaehler laden
-loadSettings();
-updateIdCount();
+// Beim Oeffnen des Popups: Sprache, Einstellungen und ID-Zaehler laden
+loadLanguage().then(() => {
+    updateLangButtons();
+    loadSettings();
+    updateIdCount();
+});
