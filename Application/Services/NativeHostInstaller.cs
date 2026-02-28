@@ -283,27 +283,18 @@ public static class NativeHostInstaller
 
     /// <summary>
     /// Deinstalliert den Native Messaging Host vollstaendig.
-    /// Beendet laufende GyazoDumper-Prozesse (Native Host von Chrome),
-    /// entfernt Registry-Eintraege und startet einen cmd.exe Nachzuegler
-    /// der den Ordner loescht nachdem diese EXE beendet ist.
+    /// 
+    /// Reihenfolge:
+    ///   1. Registry-Eintraege entfernen (sofort, keine Abhaengigkeiten)
+    ///   2. cmd.exe Nachzuegler starten (wartet 3s, loescht dann alle Dateien)
+    ///   3. Laufende Native Host Prozesse beenden (letzter Schritt vor Exit)
+    /// 
+    /// Nach dem Exit sind alle Dateien entsperrt und der Nachzuegler
+    /// loescht den gesamten Ordnerinhalt. Der leere Ordner bleibt bestehen.
     /// </summary>
     public static void Uninstall()
     {
-        // Laufende GyazoDumper-Prozesse beenden (Chrome Native Host)
-        // Ohne das bleiben .old Dateien gesperrt
-        var currentPid = Environment.ProcessId;
-        foreach (var proc in Process.GetProcessesByName("GyazoDumper"))
-        {
-            if (proc.Id == currentPid) continue;
-            try
-            {
-                proc.Kill();
-                proc.WaitForExit(3000);
-                Console.WriteLine($"  Native Host Prozess beendet (PID {proc.Id})");
-            }
-            catch { }
-        }
-
+        // 1. Registry-Eintraege entfernen
         try
         {
             Registry.CurrentUser.DeleteSubKeyTree(ChromeRegistryPath, false);
@@ -318,38 +309,42 @@ public static class NativeHostInstaller
         }
         catch { }
 
-        // Alles ausser die laufende EXE loeschen
+        // 2. cmd.exe Nachzuegler starten — wartet 3 Sekunden, dann loescht
+        //    alle Dateien und Unterordner. Der Ordner selbst bleibt leer bestehen.
         if (Directory.Exists(AppDataDir))
         {
-            foreach (var file in Directory.GetFiles(AppDataDir))
+            try
             {
-                var name = Path.GetFileName(file);
-                if (name.Equals(ExeFileName, StringComparison.OrdinalIgnoreCase)) continue;
-                try { File.Delete(file); } catch { }
-            }
+                var cleanupCmd = $"timeout /t 3 /nobreak >nul " +
+                    $"& del /f /q \"{AppDataDir}\\*\" 2>nul " +
+                    $"& for /d %d in (\"{AppDataDir}\\*\") do @rmdir /s /q \"%d\" 2>nul";
 
-            foreach (var dir in Directory.GetDirectories(AppDataDir))
-            {
-                try { Directory.Delete(dir, true); } catch { }
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c {cleanupCmd}",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+                Console.WriteLine("  Bereinigung geplant (in 3 Sekunden)");
             }
-
-            Console.WriteLine($"  Dateien entfernt aus: {AppDataDir}");
+            catch { }
         }
 
-        // cmd.exe Nachzuegler: wartet 2 Sekunden, dann loescht den Ordner komplett
-        // (die laufende EXE und ggf. Uninstall.bat sind dann freigegeben)
-        try
+        // 3. Laufende Native Host Prozesse beenden (letzter Schritt)
+        //    Gibt Datei-Locks frei damit der Nachzuegler alles loeschen kann.
+        var currentPid = Environment.ProcessId;
+        foreach (var proc in Process.GetProcessesByName("GyazoDumper"))
         {
-            var psi = new ProcessStartInfo
+            if (proc.Id == currentPid) continue;
+            try
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c timeout /t 2 /nobreak >nul & rmdir /s /q \"{AppDataDir}\"",
-                CreateNoWindow = true,
-                UseShellExecute = false
-            };
-            Process.Start(psi);
+                proc.Kill();
+                proc.WaitForExit(3000);
+                Console.WriteLine($"  Native Host Prozess beendet (PID {proc.Id})");
+            }
+            catch { }
         }
-        catch { }
     }
 
     // ========================================================================
