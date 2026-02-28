@@ -24,8 +24,6 @@ public class Program
                 NativeHostInstaller.Uninstall();
                 Console.WriteLine();
                 Console.WriteLine("  Deinstallation abgeschlossen.");
-                Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
-                Console.ReadKey(true);
                 return;
             }
 

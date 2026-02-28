@@ -282,10 +282,28 @@ public static class NativeHostInstaller
     // ========================================================================
 
     /// <summary>
-    /// Deinstalliert den Native Messaging Host vollstaendig
+    /// Deinstalliert den Native Messaging Host vollstaendig.
+    /// Beendet laufende GyazoDumper-Prozesse (Native Host von Chrome),
+    /// entfernt Registry-Eintraege und startet einen cmd.exe Nachzuegler
+    /// der den Ordner loescht nachdem diese EXE beendet ist.
     /// </summary>
     public static void Uninstall()
     {
+        // Laufende GyazoDumper-Prozesse beenden (Chrome Native Host)
+        // Ohne das bleiben .old Dateien gesperrt
+        var currentPid = Environment.ProcessId;
+        foreach (var proc in Process.GetProcessesByName("GyazoDumper"))
+        {
+            if (proc.Id == currentPid) continue;
+            try
+            {
+                proc.Kill();
+                proc.WaitForExit(3000);
+                Console.WriteLine($"  Native Host Prozess beendet (PID {proc.Id})");
+            }
+            catch { }
+        }
+
         try
         {
             Registry.CurrentUser.DeleteSubKeyTree(ChromeRegistryPath, false);
@@ -300,18 +318,38 @@ public static class NativeHostInstaller
         }
         catch { }
 
+        // Alles ausser die laufende EXE loeschen
         if (Directory.Exists(AppDataDir))
         {
-            try
+            foreach (var file in Directory.GetFiles(AppDataDir))
             {
-                Directory.Delete(AppDataDir, true);
-                Console.WriteLine($"  Ordner entfernt: {AppDataDir}");
+                var name = Path.GetFileName(file);
+                if (name.Equals(ExeFileName, StringComparison.OrdinalIgnoreCase)) continue;
+                try { File.Delete(file); } catch { }
             }
-            catch (Exception ex)
+
+            foreach (var dir in Directory.GetDirectories(AppDataDir))
             {
-                Console.WriteLine($"  Ordner konnte nicht vollstaendig entfernt werden: {ex.Message}");
+                try { Directory.Delete(dir, true); } catch { }
             }
+
+            Console.WriteLine($"  Dateien entfernt aus: {AppDataDir}");
         }
+
+        // cmd.exe Nachzuegler: wartet 2 Sekunden, dann loescht den Ordner komplett
+        // (die laufende EXE und ggf. Uninstall.bat sind dann freigegeben)
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c timeout /t 2 /nobreak >nul & rmdir /s /q \"{AppDataDir}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+            Process.Start(psi);
+        }
+        catch { }
     }
 
     // ========================================================================
@@ -322,6 +360,7 @@ public static class NativeHostInstaller
     /// Kopiert die aktuelle EXE nach %APPDATA%\GyazoDumper\.
     /// Falls die Zieldatei gesperrt ist (Chrome nutzt den Native Host),
     /// wird die alte Datei umbenannt und dann die neue kopiert.
+    /// Erstellt ausserdem eine Uninstall.bat im Installationsordner.
     /// </summary>
     private static void CopyToAppData()
     {
@@ -345,6 +384,30 @@ public static class NativeHostInstaller
             File.Move(InstalledExePath, backupPath);
             File.Copy(currentExe, InstalledExePath);
         }
+
+        CreateUninstallBat();
+    }
+
+    /// <summary>
+    /// Erstellt eine Uninstall.bat im Installationsordner.
+    /// Die BAT ruft die EXE mit --uninstall auf, wartet auf das Ende,
+    /// loescht den Ordner und sich selbst.
+    /// </summary>
+    private static void CreateUninstallBat()
+    {
+        var batPath = Path.Combine(AppDataDir, "Uninstall.bat");
+        var batContent = $"""
+            @echo off
+            echo.
+            echo   GyazoDumper Deinstallation
+            echo   ══════════════════════════
+            echo.
+            "{InstalledExePath}" --uninstall
+            echo.
+            echo   Druecke eine beliebige Taste zum Beenden...
+            pause >nul
+            """;
+        File.WriteAllText(batPath, batContent);
     }
 
     /// <summary>
