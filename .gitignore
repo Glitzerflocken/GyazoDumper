@@ -362,9 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /GyazoDumper.slnx
-/images/GyazoDumper_Extension_Popup_Image.png
-/images/GyazoDumper_Extension_Popup_Image2.png
-/images/GyazoDumper_WebStore_Image.png
 
 #ignoriert Ordner
 /ForEdge/
@@ -372,3 +369,4 @@ FodyWeavers.xsd
 /SetupBootstrapper/
 /SetupSFX/
 /nlpifdgajdjkmenmmbpfekfefmaancnc.crx
+/images/

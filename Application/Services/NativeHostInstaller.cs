@@ -6,20 +6,20 @@ using System.Text.Json;
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// Installiert/Deinstalliert den GyazoDumper Native Messaging Host.
+/// Installs/Uninstalls the GyazoDumper Native Messaging Host.
 /// 
-/// Installationsablauf:
-///   1. Ordner erstellen + EXE kopieren
-///   2. Browser-Extension Dateien extrahieren
-///   3. Bestehende Manifest-Origins einlesen
-///   4. Extension-ID registrieren (Web Store ID + optional weitere)
-///   5. Registry-Eintraege erstellen
-///   6. Konfiguration erstellen/mergen
-///   7. Ordnerverknuepfung erstellen
+/// Installation steps:
+///   1. Create folder + copy EXE
+///   2. Extract browser extension files
+///   3. Load existing manifest origins
+///   4. Register extension ID (Web Store ID + optional additional)
+///   5. Create registry entries
+///   6. Create/merge configuration
+///   7. Create folder shortcut
 /// 
-/// Deinstallation:
-///   1. Registry-Eintraege entfernen
-///   2. Gesamten %APPDATA%\GyazoDumper\ Ordner loeschen
+/// Uninstall:
+///   1. Remove registry entries
+///   2. Delete entire %APPDATA%\GyazoDumper\ folder contents
 /// </summary>
 public static class NativeHostInstaller
 {
@@ -30,7 +30,7 @@ public static class NativeHostInstaller
     private const string ChromeRegistryPath = @"SOFTWARE\Google\Chrome\NativeMessagingHosts\" + HostName;
     private const string EdgeRegistryPath = @"SOFTWARE\Microsoft\Edge\NativeMessagingHosts\" + HostName;
 
-    // Chrome Web Store Extension-ID (fest seit Veroeffentlichung)
+    // Chrome Web Store Extension-ID (fixed since publication)
     private const string WebStoreExtensionId = "nlpifdgajdjkmenmmbpfekfefmaancnc";
     private const string WebStoreUrl = "https://chromewebstore.google.com/detail/gyazodumper/" + WebStoreExtensionId;
 
@@ -47,11 +47,11 @@ public static class NativeHostInstaller
         "GyazoDumps");
 
     // ========================================================================
-    //  Interaktiver Setup-Assistent
+    //  Interactive Setup Wizard
     // ========================================================================
 
     /// <summary>
-    /// Interaktiver Setup-Assistent - wird bei Doppelklick auf die EXE ausgefuehrt.
+    /// Interactive setup wizard — runs when the EXE is double-clicked.
     /// </summary>
     public static void InteractiveInstall()
     {
@@ -61,11 +61,11 @@ public static class NativeHostInstaller
         Console.WriteLine("╚══════════════════════════════════════╝");
         Console.ResetColor();
         Console.WriteLine();
-        Console.WriteLine($"  Installationsordner: {AppDataDir}");
+        Console.WriteLine($"  Install folder: {AppDataDir}");
         Console.WriteLine();
 
-        // --- Schritt 1: Ordner erstellen + EXE kopieren ---
-        Console.Write("  [1/7] Anwendung installieren ...             ");
+        // --- Step 1: Create folder + copy EXE ---
+        Console.Write("  [1/7] Installing application ...              ");
         try
         {
             CopyToAppData();
@@ -78,8 +78,8 @@ public static class NativeHostInstaller
             return;
         }
 
-        // --- Schritt 2: Browser-Extension Dateien extrahieren ---
-        Console.Write("  [2/7] Browser-Extension extrahieren ...      ");
+        // --- Step 2: Extract browser extension files ---
+        Console.Write("  [2/7] Extracting browser extension ...        ");
         try
         {
             ExtractBrowserExtension(Path.Combine(AppDataDir, ExtensionFolderName));
@@ -88,17 +88,17 @@ public static class NativeHostInstaller
         catch (Exception ex)
         {
             WriteFail(ex.Message);
-            // Nicht abbrechen — Extension ist optional
+            // Don't abort — extension is optional
         }
 
-        // --- Schritt 3: Bestehende Manifest-Origins einlesen ---
-        Console.Write("  [3/7] Bestehende Konfiguration laden ...     ");
+        // --- Step 3: Load existing manifest origins ---
+        Console.Write("  [3/7] Loading existing configuration ...      ");
         var existingOrigins = LoadExistingOrigins();
         if (existingOrigins.Count > 0)
         {
             WriteOk();
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine($"        Bereits registriert: {existingOrigins.Count} Origin(s)");
+            Console.WriteLine($"        Already registered: {existingOrigins.Count} origin(s)");
             Console.ResetColor();
         }
         else
@@ -106,18 +106,18 @@ public static class NativeHostInstaller
             WriteOk();
         }
 
-        // --- Schritt 4: Extension-ID registrieren ---
-        Console.WriteLine("  [4/7] Extension registrieren");
+        // --- Step 4: Register extension ID ---
+        Console.WriteLine("  [4/7] Registering extension");
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"        Chrome Web Store ID ist bereits hinterlegt:");
+        Console.WriteLine($"        Chrome Web Store ID is already registered:");
         Console.WriteLine($"        {WebStoreExtensionId}");
         Console.ResetColor();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("        Zusaetzliche ID registrieren? (z.B. fuer Entwicklung)");
+        Console.WriteLine("        Register additional ID? (e.g. for development)");
         Console.ResetColor();
-        Console.Write("        Eingabe (oder Enter zum Ueberspringen): ");
+        Console.Write("        Input (or press Enter to skip): ");
 
         var customId = Console.ReadLine()?.Trim();
         if (!string.IsNullOrEmpty(customId))
@@ -125,7 +125,7 @@ public static class NativeHostInstaller
             customId = customId.Replace("chrome-extension://", "").TrimEnd('/');
         }
 
-        Console.Write("        Manifest erstellen ...                  ");
+        Console.Write("        Creating manifest ...                   ");
         try
         {
             CreateManifest(customId, existingOrigins);
@@ -138,8 +138,8 @@ public static class NativeHostInstaller
             return;
         }
 
-        // --- Schritt 5: Registry-Eintraege ---
-        Console.Write("  [5/7] Registry-Eintraege erstellen ...       ");
+        // --- Step 5: Registry entries ---
+        Console.Write("  [5/7] Creating registry entries ...           ");
         try
         {
             RegisterInRegistry(ChromeRegistryPath, ManifestPath);
@@ -153,8 +153,8 @@ public static class NativeHostInstaller
             return;
         }
 
-        // --- Schritt 6: Konfiguration erstellen/mergen ---
-        Console.Write("  [6/7] Konfiguration erstellen ...            ");
+        // --- Step 6: Create/merge configuration ---
+        Console.Write("  [6/7] Creating configuration ...              ");
         string savePath;
         try
         {
@@ -162,11 +162,11 @@ public static class NativeHostInstaller
             WriteOk();
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"        Bilder werden gespeichert in:");
+            Console.WriteLine($"        Images will be saved to:");
             Console.WriteLine($"        {savePath}");
             Console.ResetColor();
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("        (Kann spaeter in der Browser-Extension geaendert werden)");
+            Console.WriteLine("        (Can be changed later in the browser extension)");
             Console.ResetColor();
             Console.WriteLine();
         }
@@ -176,8 +176,8 @@ public static class NativeHostInstaller
             savePath = DefaultSavePath;
         }
 
-        // --- Schritt 7: Ordnerverknuepfung ---
-        Console.Write("  [7/7] Ordnerverknuepfung erstellen ...       ");
+        // --- Step 7: Folder shortcut ---
+        Console.Write("  [7/7] Creating folder shortcut ...            ");
         try
         {
             Directory.CreateDirectory(savePath);
@@ -189,35 +189,35 @@ public static class NativeHostInstaller
             WriteFail(ex.Message);
         }
 
-        // --- Abschluss ---
+        // --- Completion ---
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("  ══════════════════════════════════════");
-        Console.WriteLine("  Installation abgeschlossen!");
+        Console.WriteLine("  Installation complete!");
         Console.WriteLine("  ══════════════════════════════════════");
         Console.ResetColor();
         Console.WriteLine();
-        Console.WriteLine("  Browser-Extension installieren:");
+        Console.WriteLine("  Install the browser extension:");
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.Write("  • Chrome Web Store: ");
         Console.ResetColor();
         Console.WriteLine(WebStoreUrl);
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("  • Oder manuell ueber den Entwicklermodus:");
-        Console.WriteLine("    1. Oeffne chrome://extensions/ (oder edge://extensions/)");
-        Console.WriteLine("    2. Aktiviere den Entwicklermodus (Schalter oben rechts)");
-        Console.WriteLine("    3. Klicke 'Entpackte Erweiterung laden'");
-        Console.WriteLine($"    4. Waehle diesen Ordner: {Path.Combine(AppDataDir, ExtensionFolderName)}");
+        Console.WriteLine("  • Or manually via developer mode:");
+        Console.WriteLine("    1. Open chrome://extensions/ (or edge://extensions/)");
+        Console.WriteLine("    2. Enable Developer mode (toggle in the top right)");
+        Console.WriteLine("    3. Click 'Load unpacked'");
+        Console.WriteLine($"    4. Select this folder: {Path.Combine(AppDataDir, ExtensionFolderName)}");
         Console.ResetColor();
         Console.WriteLine();
 
-        // Optionale Aktionen - beide abfragen, dann ausfuehren
-        Console.Write("  Chrome Web Store im Browser oeffnen? (j/n): ");
-        var openStore = Console.ReadLine()?.Trim().ToLower() == "j";
+        // Optional actions — ask both, then execute
+        Console.Write("  Open Chrome Web Store in browser? (y/n): ");
+        var openStore = Console.ReadLine()?.Trim().ToLower() == "y";
 
-        Console.Write("  Installationsordner im Explorer oeffnen? (j/n): ");
-        var openFolder = Console.ReadLine()?.Trim().ToLower() == "j";
+        Console.Write("  Open install folder in Explorer? (y/n): ");
+        var openFolder = Console.ReadLine()?.Trim().ToLower() == "y";
 
         Console.WriteLine();
 
@@ -251,13 +251,13 @@ public static class NativeHostInstaller
     }
 
     // ========================================================================
-    //  Stille Installation (Kommandozeile)
+    //  Silent Installation (Command Line)
     // ========================================================================
 
     /// <summary>
-    /// Kommandozeilen-Installation (still, ohne interaktive Eingabe).
-    /// Web Store ID wird automatisch registriert.
-    /// Optional: zusaetzliche Extension-ID als Parameter.
+    /// Command-line installation (silent, no interactive input).
+    /// Web Store ID is registered automatically.
+    /// Optional: additional extension ID as parameter.
     /// </summary>
     public static void Install(string? additionalExtensionId = null)
     {
@@ -278,39 +278,39 @@ public static class NativeHostInstaller
     }
 
     // ========================================================================
-    //  Deinstallation
+    //  Uninstall
     // ========================================================================
 
     /// <summary>
-    /// Deinstalliert den Native Messaging Host vollstaendig.
+    /// Fully uninstalls the Native Messaging Host.
     /// 
-    /// Reihenfolge:
-    ///   1. Registry-Eintraege entfernen (sofort, keine Abhaengigkeiten)
-    ///   2. cmd.exe Nachzuegler starten (wartet 3s, loescht dann alle Dateien)
-    ///   3. Laufende Native Host Prozesse beenden (letzter Schritt vor Exit)
+    /// Order:
+    ///   1. Remove registry entries (immediate, no dependencies)
+    ///   2. Start cmd.exe cleanup process (waits 3s, then deletes all files)
+    ///   3. Kill running Native Host processes (last step before exit)
     /// 
-    /// Nach dem Exit sind alle Dateien entsperrt und der Nachzuegler
-    /// loescht den gesamten Ordnerinhalt. Der leere Ordner bleibt bestehen.
+    /// After exit all files are unlocked and the cleanup process
+    /// deletes the entire folder contents. The empty folder remains.
     /// </summary>
     public static void Uninstall()
     {
-        // 1. Registry-Eintraege entfernen
+        // 1. Remove registry entries
         try
         {
             Registry.CurrentUser.DeleteSubKeyTree(ChromeRegistryPath, false);
-            Console.WriteLine("  Chrome Registry-Eintrag entfernt");
+            Console.WriteLine("  Chrome registry entry removed");
         }
         catch { }
 
         try
         {
             Registry.CurrentUser.DeleteSubKeyTree(EdgeRegistryPath, false);
-            Console.WriteLine("  Edge Registry-Eintrag entfernt");
+            Console.WriteLine("  Edge registry entry removed");
         }
         catch { }
 
-        // 2. cmd.exe Nachzuegler starten — wartet 3 Sekunden, dann loescht
-        //    alle Dateien und Unterordner. Der Ordner selbst bleibt leer bestehen.
+        // 2. Start cmd.exe cleanup process — waits 3 seconds, then deletes
+        //    all files and subdirectories. The folder itself remains empty.
         if (Directory.Exists(AppDataDir))
         {
             try
@@ -326,13 +326,13 @@ public static class NativeHostInstaller
                     CreateNoWindow = true,
                     UseShellExecute = false
                 });
-                Console.WriteLine("  Bereinigung geplant (in 3 Sekunden)");
+                Console.WriteLine("  Cleanup scheduled (in 3 seconds)");
             }
             catch { }
         }
 
-        // 3. Laufende Native Host Prozesse beenden (letzter Schritt)
-        //    Gibt Datei-Locks frei damit der Nachzuegler alles loeschen kann.
+        // 3. Kill running Native Host processes (last step)
+        //    Releases file locks so the cleanup process can delete everything.
         var currentPid = Environment.ProcessId;
         foreach (var proc in Process.GetProcessesByName("GyazoDumper"))
         {
@@ -341,28 +341,28 @@ public static class NativeHostInstaller
             {
                 proc.Kill();
                 proc.WaitForExit(2900);
-                Console.WriteLine($"  Native Host Prozess beendet (PID {proc.Id})");
+                Console.WriteLine($"  Native Host process terminated (PID {proc.Id})");
             }
             catch { }
         }
     }
 
     // ========================================================================
-    //  Dateien kopieren / extrahieren
+    //  Copy / Extract Files
     // ========================================================================
 
     /// <summary>
-    /// Kopiert die aktuelle EXE nach %APPDATA%\GyazoDumper\.
-    /// Falls die Zieldatei gesperrt ist (Chrome nutzt den Native Host),
-    /// wird die alte Datei umbenannt und dann die neue kopiert.
-    /// Erstellt ausserdem eine Uninstall.bat im Installationsordner.
+    /// Copies the current EXE to %APPDATA%\GyazoDumper\.
+    /// If the target file is locked (Chrome is using the Native Host),
+    /// the old file is renamed and the new one is copied.
+    /// Also creates an Uninstall.bat in the install folder.
     /// </summary>
     private static void CopyToAppData()
     {
         Directory.CreateDirectory(AppDataDir);
 
         var currentExe = Environment.ProcessPath
-            ?? throw new InvalidOperationException("Konnte Anwendungspfad nicht ermitteln");
+            ?? throw new InvalidOperationException("Could not determine application path");
 
         var normalizedCurrent = Path.GetFullPath(currentExe).ToLowerInvariant();
         var normalizedTarget = Path.GetFullPath(InstalledExePath).ToLowerInvariant();
@@ -384,9 +384,9 @@ public static class NativeHostInstaller
     }
 
     /// <summary>
-    /// Erstellt eine Uninstall.bat im Installationsordner.
-    /// Die BAT ruft die EXE mit --uninstall auf, wartet auf das Ende,
-    /// loescht den Ordner und sich selbst.
+    /// Creates an Uninstall.bat in the install folder.
+    /// The BAT calls the EXE with --uninstall, waits for it to finish,
+    /// then the cleanup process deletes the remaining files.
     /// </summary>
     private static void CreateUninstallBat()
     {
@@ -394,20 +394,20 @@ public static class NativeHostInstaller
         var batContent = $"""
             @echo off
             echo.
-            echo   GyazoDumper Deinstallation
+            echo   GyazoDumper Uninstall
             echo   ══════════════════════════
             echo.
             "{InstalledExePath}" --uninstall
             echo.
-            echo   Druecke eine beliebige Taste zum Beenden...
+            echo   Press any key to exit...
             pause >nul
             """;
         File.WriteAllText(batPath, batContent);
     }
 
     /// <summary>
-    /// Extrahiert die eingebetteten Browser-Extension-Dateien.
-    /// Ueberschreibt bestehende Dateien um Updates zu ermoeglichen.
+    /// Extracts the embedded browser extension files.
+    /// Overwrites existing files to allow updates.
     /// </summary>
     private static void ExtractBrowserExtension(string targetDir)
     {
@@ -436,7 +436,7 @@ public static class NativeHostInstaller
     // ========================================================================
 
     /// <summary>
-    /// Laedt bestehende allowed_origins aus einem vorhandenen Manifest
+    /// Loads existing allowed_origins from a previously created manifest.
     /// </summary>
     private static List<string> LoadExistingOrigins()
     {
@@ -456,19 +456,19 @@ public static class NativeHostInstaller
     }
 
     /// <summary>
-    /// Erstellt das Native Messaging Manifest.
-    /// Die Web Store Extension-ID wird immer automatisch hinzugefuegt.
-    /// Optional kann eine zusaetzliche ID (z.B. fuer Entwicklung) angegeben werden.
-    /// Bestehende Origins werden beibehalten.
+    /// Creates the Native Messaging Manifest.
+    /// The Web Store extension ID is always added automatically.
+    /// An additional ID (e.g. for development) can optionally be specified.
+    /// Existing origins are preserved.
     /// </summary>
     private static void CreateManifest(string? additionalExtensionId, List<string> existingOrigins)
     {
         var allowedOrigins = new HashSet<string>(existingOrigins);
 
-        // Web Store ID immer hinzufuegen
+        // Always add Web Store ID
         allowedOrigins.Add($"chrome-extension://{WebStoreExtensionId}/");
 
-        // Zusaetzliche ID hinzufuegen falls angegeben
+        // Add additional ID if specified
         if (!string.IsNullOrEmpty(additionalExtensionId))
         {
             allowedOrigins.Add($"chrome-extension://{additionalExtensionId}/");
@@ -477,7 +477,7 @@ public static class NativeHostInstaller
         var manifest = new NativeMessagingManifest
         {
             Name = HostName,
-            Description = "GyazoDumper Native Messaging Host - Speichert Gyazo-Bilder an beliebigem Ort",
+            Description = "GyazoDumper Native Messaging Host - Saves Gyazo images to any location",
             Path = InstalledExePath,
             Type = "stdio",
             AllowedOrigins = allowedOrigins.ToArray()
@@ -498,11 +498,11 @@ public static class NativeHostInstaller
     }
 
     // ========================================================================
-    //  Konfiguration (config.json merge)
+    //  Configuration (config.json merge)
     // ========================================================================
 
     /// <summary>
-    /// Laedt eine bestehende config.json oder erstellt Standardwerte.
+    /// Loads an existing config.json or creates default values.
     /// </summary>
     private static AppConfig LoadConfig()
     {
@@ -520,22 +520,22 @@ public static class NativeHostInstaller
     }
 
     /// <summary>
-    /// Merged bestehende config.json mit Standardwerten.
-    /// Vorhandene Werte bleiben erhalten, fehlende/leere Keys werden aufgefuellt.
-    /// Gibt den aktiven Speicherpfad zurueck.
+    /// Merges existing config.json with default values.
+    /// Existing values are preserved, missing/empty keys are filled in.
+    /// Returns the active save path.
     /// </summary>
     private static string MergeConfig()
     {
         var config = LoadConfig();
 
-        // Leere Werte mit Defaults fuellen
+        // Fill empty values with defaults
         if (string.IsNullOrEmpty(config.SaveDirectory))
             config.SaveDirectory = DefaultSavePath;
 
         if (string.IsNullOrEmpty(config.FileNamePattern))
             config.FileNamePattern = "Gyazo_{timestamp}_{hash}{ext}";
 
-        // Immer schreiben (stellt sicher dass neue Keys vorhanden sind)
+        // Always write (ensures new keys are present)
         var json = JsonSerializer.Serialize(config, GyazoDumperJsonContext.Default.AppConfig);
         File.WriteAllText(ConfigPath, json);
 
@@ -543,16 +543,16 @@ public static class NativeHostInstaller
     }
 
     // ========================================================================
-    //  Ordnerverknuepfung (Junction)
+    //  Folder Shortcut (Junction)
     // ========================================================================
 
     /// <summary>
-    /// Erstellt oder aktualisiert die Ordnerverknuepfung (Junction) im AppData-Ordner.
-    /// Wird bei Installation und bei jedem Ordnerwechsel aufgerufen.
+    /// Creates or updates the folder shortcut (junction) in the AppData folder.
+    /// Called during installation and on every folder change.
     /// </summary>
     public static void UpdateFolderShortcut(string targetPath)
     {
-        var linkPath = Path.Combine(AppDataDir, "Gespeicherte Bilder");
+        var linkPath = Path.Combine(AppDataDir, "Saved Images");
 
         if (Directory.Exists(linkPath))
         {
@@ -575,7 +575,7 @@ public static class NativeHostInstaller
     }
 
     // ========================================================================
-    //  Konsolen-Hilfsfunktionen
+    //  Console Helpers
     // ========================================================================
 
     private static void WriteOk()
@@ -588,14 +588,14 @@ public static class NativeHostInstaller
     private static void WriteFail(string message)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("FEHLER");
+        Console.WriteLine("FAILED");
         Console.WriteLine($"        {message}");
         Console.ResetColor();
     }
 
     private static void WaitAndExit()
     {
-        Console.WriteLine("  Druecke eine beliebige Taste zum Beenden...");
+        Console.WriteLine("  Press any key to exit...");
         Console.ReadKey(true);
     }
 }
