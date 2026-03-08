@@ -35,7 +35,7 @@ public static class NativeHostInstaller
     private const string ChromeWebStoreUrl = "https://chromewebstore.google.com/detail/gyazodumper/" + ChromeWebStoreExtensionId;
 
     // Edge Add-ons Extension-ID (fixed since publication)
-    private const string EdgeWebStoreExtensionId = "nlpifdgajdjkmenmmbpfekfefmaancnc";
+    private const string EdgeWebStoreExtensionId = "ihhioaipmjkfefnlmakpelgpohoofbed";
     private const string EdgeWebStoreUrl = "https://microsoftedge.microsoft.com/addons/detail/gyazodumper/" + EdgeWebStoreExtensionId;
 
     private static string AppDataDir => Path.Combine(
