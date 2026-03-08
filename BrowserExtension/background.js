@@ -1,44 +1,44 @@
 /**
  * GyazoDumper - Background Service Worker
  * 
- * Empfaengt Nachrichten vom Content Script mit der Bild-URL
- * und laedt das Bild automatisch herunter.
+ * Receives messages from the Content Script with the image URL
+ * and downloads the image automatically.
  * 
- * Modi:
- *   - Browser-Modus: Speichert ueber chrome.downloads API im Download-Ordner
- *   - Desktop-App-Modus: Sendet an Native Messaging Host fuer beliebigen Speicherort
+ * Modes:
+ *   - Browser mode: Saves via chrome.downloads API to the download folder
+ *   - Desktop App mode: Sends to Native Messaging Host for any save location
  * 
- * Persistenz:
- *   - chrome.storage.local speichert alle heruntergeladenen IDs (schnell, persistent)
- *   - IDs koennen ueber das Popup als Textdatei exportiert werden
+ * Persistence:
+ *   - chrome.storage.local stores all downloaded IDs (fast, persistent)
+ *   - IDs can be exported as a text file via the popup
  */
 
-// Standard-Zielordner (Unterordner im Chrome-Download-Verzeichnis)
+// Default target folder (subfolder in the Chrome download directory)
 const DEFAULT_ZIELORDNER = "GyazoDumps";
 const NATIVE_HOST_NAME = "gyazodumper.nativeapp";
 
-// Aktueller Zielordner (wird beim Start aus chrome.storage.local geladen)
+// Current target folder (loaded from chrome.storage.local on startup)
 let zielordner = DEFAULT_ZIELORDNER;
 
-// Desktop-App Modus aktiviert?
+// Desktop App mode enabled?
 let useDesktopApp = false;
 
-// Native Messaging Port (nur wenn Desktop-App aktiv)
+// Native Messaging Port (only when Desktop App is active)
 let nativePort = null;
 
-// Set um bereits heruntergeladene Bilder zu tracken (verhindert Doppel-Downloads)
+// Set to track already downloaded images (prevents duplicate downloads)
 let downloadedIds = new Set();
 
-// Flag: Wurden die IDs bereits aus dem Storage geladen?
+// Flag: Have the IDs been loaded from storage yet?
 let storageLoaded = false;
 
 // ============================================================================
-//  Persistenz: IDs und Einstellungen laden und speichern
+//  Persistence: Load and save IDs and settings
 // ============================================================================
 
 /**
- * Laedt alle gespeicherten IDs und den Zielordner aus chrome.storage.local.
- * Wird beim Start des Service Workers aufgerufen.
+ * Loads all saved IDs and the target folder from chrome.storage.local.
+ * Called on Service Worker startup.
  */
 async function loadDownloadedIds() {
     if (storageLoaded) return;
@@ -55,33 +55,33 @@ async function loadDownloadedIds() {
         useDesktopApp = result.useDesktopApp || false;
 
         storageLoaded = true;
-        console.log(`[GyazoDumper] ${downloadedIds.size} gespeicherte IDs aus Storage geladen.`);
-        console.log(`[GyazoDumper] Zielordner: ${zielordner}`);
-        console.log(`[GyazoDumper] Desktop-App Modus: ${useDesktopApp}`);
+        console.log(`[GyazoDumper] ${downloadedIds.size} saved IDs loaded from storage.`);
+        console.log(`[GyazoDumper] Target folder: ${zielordner}`);
+        console.log(`[GyazoDumper] Desktop App mode: ${useDesktopApp}`);
     } catch (error) {
-        console.error("[GyazoDumper] Fehler beim Laden:", error);
+        console.error("[GyazoDumper] Error loading:", error);
         storageLoaded = true;
     }
 }
 
 /**
- * Listener: Reagiert auf Aenderungen in chrome.storage.local.
- * Wenn der Benutzer den Zielordner im Popup aendert, wird er hier sofort uebernommen.
+ * Listener: Reacts to changes in chrome.storage.local.
+ * When the user changes the target folder in the popup, it is applied here immediately.
  */
 chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === "local") {
         if (changes.zielordner) {
             zielordner = changes.zielordner.newValue;
-            console.log(`[GyazoDumper] Zielordner aktualisiert: ${zielordner}`);
+            console.log(`[GyazoDumper] Target folder updated: ${zielordner}`);
         }
         if (changes.downloadedIds) {
             downloadedIds = new Set(changes.downloadedIds.newValue || []);
-            console.log(`[GyazoDumper] ID-Liste aktualisiert: ${downloadedIds.size} IDs`);
+            console.log(`[GyazoDumper] ID list updated: ${downloadedIds.size} IDs`);
         }
         if (changes.useDesktopApp !== undefined) {
             useDesktopApp = changes.useDesktopApp.newValue;
-            console.log(`[GyazoDumper] Desktop-App Modus: ${useDesktopApp}`);
-            // Port trennen wenn Desktop-App deaktiviert wird
+            console.log(`[GyazoDumper] Desktop App mode: ${useDesktopApp}`);
+            // Disconnect port when Desktop App is deactivated
             if (!useDesktopApp && nativePort) {
                 nativePort.disconnect();
                 nativePort = null;
@@ -91,7 +91,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 /**
- * Speichert eine neue ID in chrome.storage.local.
+ * Saves a new ID to chrome.storage.local.
  */
 async function saveIdToStorage(gyazoId) {
     try {
@@ -99,18 +99,18 @@ async function saveIdToStorage(gyazoId) {
         const savedIds = result.downloadedIds || [];
         savedIds.push(gyazoId);
         await chrome.storage.local.set({ downloadedIds: savedIds });
-        console.log(`[GyazoDumper] ID ${gyazoId} in Storage gespeichert. Gesamt: ${savedIds.length}`);
+        console.log(`[GyazoDumper] ID ${gyazoId} saved to storage. Total: ${savedIds.length}`);
     } catch (error) {
-        console.error("[GyazoDumper] Fehler beim Speichern der ID:", error);
+        console.error("[GyazoDumper] Error saving ID:", error);
     }
 }
 
 // ============================================================================
-//  Native Messaging (Desktop-App Modus)
+//  Native Messaging (Desktop App mode)
 // ============================================================================
 
 /**
- * Verbindet zum Native Messaging Host (Desktop-App)
+ * Connects to the Native Messaging Host (Desktop App).
  */
 function connectToNativeHost() {
     if (nativePort) return nativePort;
@@ -119,30 +119,30 @@ function connectToNativeHost() {
         nativePort = chrome.runtime.connectNative(NATIVE_HOST_NAME);
 
         nativePort.onMessage.addListener((response) => {
-            console.log("[GyazoDumper] Native Host Antwort:", response);
+            console.log("[GyazoDumper] Native Host response:", response);
         });
 
         nativePort.onDisconnect.addListener(() => {
-            const error = chrome.runtime.lastError?.message || "Unbekannter Fehler";
-            console.log(`[GyazoDumper] Native Host getrennt: ${error}`);
+            const error = chrome.runtime.lastError?.message || "Unknown error";
+            console.log(`[GyazoDumper] Native Host disconnected: ${error}`);
             nativePort = null;
         });
 
-        console.log("[GyazoDumper] Mit Native Host verbunden.");
+        console.log("[GyazoDumper] Connected to Native Host.");
         return nativePort;
     } catch (error) {
-        console.error("[GyazoDumper] Verbindung zu Native Host fehlgeschlagen:", error);
+        console.error("[GyazoDumper] Connection to Native Host failed:", error);
         return null;
     }
 }
 
 /**
- * Sendet Bild-URL an den Native Host zum Download
+ * Sends image URL to the Native Host for download.
  */
 async function downloadViaNativeHost(imageUrl, gyazoId) {
     const port = connectToNativeHost();
     if (!port) {
-        return { success: false, error: "Native Host nicht verfuegbar" };
+        return { success: false, error: "Native Host not available" };
     }
 
     return new Promise((resolve) => {
@@ -160,7 +160,7 @@ async function downloadViaNativeHost(imageUrl, gyazoId) {
             timestamp: new Date().toISOString()
         });
 
-        // Timeout nach 30 Sekunden
+        // Timeout after 30 seconds
         setTimeout(() => {
             port.onMessage.removeListener(messageHandler);
             resolve({ success: false, error: "Timeout" });
@@ -169,11 +169,11 @@ async function downloadViaNativeHost(imageUrl, gyazoId) {
 }
 
 // ============================================================================
-//  Browser Download (Standard-Modus)
+//  Browser Download (default mode)
 // ============================================================================
 
 /**
- * Laedt Bild ueber chrome.downloads API herunter
+ * Downloads image via chrome.downloads API.
  */
 function downloadViaBrowser(imageUrl, gyazoId) {
     return new Promise((resolve) => {
@@ -199,7 +199,7 @@ function downloadViaBrowser(imageUrl, gyazoId) {
 }
 
 // ============================================================================
-//  Message-Listener: Download-Anfragen vom Content Script
+//  Message listener: Download requests from the Content Script
 // ============================================================================
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -210,15 +210,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             const imageUrl = message.imageUrl;
             const gyazoId = message.gyazoId;
 
-            // Doppel-Downloads verhindern
+            // Prevent duplicate downloads
             if (downloadedIds.has(gyazoId)) {
-                console.log(`[GyazoDumper] Bild ${gyazoId} bereits heruntergeladen, ueberspringe.`);
+                console.log(`[GyazoDumper] Image ${gyazoId} already downloaded, skipping.`);
                 sendResponse({ success: true, downloadId: null, skipped: true });
                 return;
             }
 
-            console.log(`[GyazoDumper] Download angefordert: ${imageUrl}`);
-            console.log(`[GyazoDumper] Modus: ${useDesktopApp ? "Desktop-App" : "Browser"}`);
+            console.log(`[GyazoDumper] Download requested: ${imageUrl}`);
+            console.log(`[GyazoDumper] Mode: ${useDesktopApp ? "Desktop App" : "Browser"}`);
 
             let result;
             if (useDesktopApp) {
@@ -228,11 +228,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
 
             if (result.success) {
-                console.log(`[GyazoDumper] Download erfolgreich!`);
+                console.log(`[GyazoDumper] Download successful!`);
                 downloadedIds.add(gyazoId);
                 await saveIdToStorage(gyazoId);
             } else {
-                console.error(`[GyazoDumper] Download-Fehler: ${result.error}`);
+                console.error(`[GyazoDumper] Download error: ${result.error}`);
             }
 
             sendResponse(result);
@@ -241,7 +241,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
-    // Nachricht vom Popup: Native Host Status pruefen
+    // Message from popup: Check Native Host status
     if (message.action === "checkNativeHost") {
         (async () => {
             try {
@@ -260,7 +260,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 port.onDisconnect.addListener(() => {
                     clearTimeout(timeout);
-                    const error = chrome.runtime.lastError?.message || "Nicht installiert";
+                    const error = chrome.runtime.lastError?.message || "Not installed";
                     sendResponse({ installed: false, error: error });
                 });
 
@@ -273,13 +273,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
-    // Nachricht vom Popup: Konfiguration vom Native Host laden
+    // Message from popup: Load configuration from Native Host
     if (message.action === "getNativeConfig") {
         (async () => {
             try {
                 const port = connectToNativeHost();
                 if (!port) {
-                    sendResponse({ success: false, error: "Native Host nicht verbunden" });
+                    sendResponse({ success: false, error: "Native Host not connected" });
                     return;
                 }
 
@@ -302,15 +302,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
-    // Nachricht vom Popup: Ordnerauswahl-Dialog ueber Native Host oeffnen
-    // Das Popup schliesst sich automatisch wenn der Dialog den Fokus bekommt (Chrome-Limitierung).
-    // Nach der Ordnerauswahl wird das Popup via chrome.action.openPopup() wieder geoeffnet.
+    // Message from popup: Open folder picker dialog via Native Host
+    // The popup closes automatically when the dialog gets focus (Chrome limitation).
+    // After folder selection, the popup is reopened via chrome.action.openPopup().
     if (message.action === "browseFolder") {
         (async () => {
             try {
                 const port = connectToNativeHost();
                 if (!port) {
-                    sendResponse({ success: false, error: "Native Host nicht verbunden" });
+                    sendResponse({ success: false, error: "Native Host not connected" });
                     return;
                 }
 
@@ -318,7 +318,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     port.onMessage.removeListener(handler);
                     try { sendResponse(response); } catch {}
 
-                    // Popup wieder oeffnen nach Ordnerauswahl (Chrome 127+)
+                    // Reopen popup after folder selection (Chrome 127+)
                     setTimeout(() => {
                         try { chrome.action.openPopup(); } catch {}
                     }, 300);
@@ -338,13 +338,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
-    // Nachricht vom Popup: Speicherordner im Windows Explorer oeffnen
+    // Message from popup: Open save folder in Windows Explorer
     if (message.action === "openFolder") {
         (async () => {
             try {
                 const port = connectToNativeHost();
                 if (!port) {
-                    sendResponse({ success: false, error: "Native Host nicht verbunden" });
+                    sendResponse({ success: false, error: "Native Host not connected" });
                     return;
                 }
 
@@ -368,6 +368,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// IDs beim Start laden
+// Load IDs on startup
 loadDownloadedIds();
-console.log("[GyazoDumper] Service Worker gestartet.");
+console.log("[GyazoDumper] Service Worker started.");

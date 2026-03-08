@@ -30,15 +30,7 @@
 
 ## What is GyazoDumper?
 
-**GyazoDumper** is a browser extension for Chrome and Edge that detects when you open a [Gyazo](https://gyazo.com) image page and automatically downloads the image in the background — without you having to click anything.
-
-### The Problem
-
-Gyazo stores screenshots in the cloud. If you want to save an image locally, you have to manually "Right-click → Save as" every time. With many images, this quickly becomes tedious.
-
-### The Solution
-
-Install the extension, open a Gyazo page — done. The image is automatically saved to your hard drive. Each image is only downloaded once, even if you visit the page multiple times.
+**GyazoDumper** is a browser extension for Chrome and Edge that automatically downloads every [Gyazo](https://gyazo.com) image you open — no clicking required. Each image is only saved once, even if you revisit the page.
 
 ---
 
@@ -60,51 +52,12 @@ Install the extension, open a Gyazo page — done. The image is automatically sa
 2. Open `chrome://extensions/` (Chrome) or `edge://extensions/` (Edge)
 3. Enable **Developer mode** (toggle in the top right)
 4. Click **Load unpacked** → select the extracted folder
-5. Done — the extension appears in the toolbar
-
-> In **Browser Mode** everything works immediately. Images are saved in the download folder under a configurable subfolder.
-
-📖 **Details:** [BrowserExtension/README.md](BrowserExtension/README.md)
 
 ### Desktop App (Optional)
 
-> The Desktop App removes the browser limitation and allows saving to **any location** on the hard drive.
-
 1. [Download GyazoDumper-Setup.exe](https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe)
-2. Run the EXE by double-clicking
-3. Enter the **Extension ID** shown in the extension popup
-4. Restart the browser
-
-📖 **Details:** [Application/README.md](Application/README.md)
-
----
-
-## Technical Flow
-
-```
-Open Gyazo page
-       │
-       ▼
-┌─────────────────────┐
-│    Content Script    │  Detects gyazo.com/[32-hex-ID] in URL
-│    (Content.js)      │  Reads the image URL from the DOM
-└────────┬────────────┘
-         │ chrome.runtime.sendMessage
-         ▼
-┌─────────────────────┐
-│  Background Worker   │  Checks if the image was already downloaded
-│  (background.js)     │  Saves the ID for duplicate detection
-└────────┬────────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
- Browser   Desktop App
-  Mode       Mode
-    │         │
-    ▼         ▼
-Downloads   Any
- Folder    Folder
-```
+2. Run the EXE — the setup wizard handles everything automatically
+3. Restart the browser
 
 ---
 

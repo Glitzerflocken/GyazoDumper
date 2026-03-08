@@ -5,12 +5,12 @@ using System.Text.Json;
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// Native Messaging Host - Kommuniziert mit der Chrome Extension
+/// Native Messaging Host — communicates with the Chrome Extension.
 /// 
-/// Protokoll:
-///   - Empfaengt JSON-Nachrichten von Chrome ueber stdin
-///   - Sendet JSON-Antworten ueber stdout
-///   - Format: 4-Byte Laenge (Little Endian) + JSON
+/// Protocol:
+///   - Receives JSON messages from Chrome via stdin
+///   - Sends JSON responses via stdout
+///   - Format: 4-byte length (little endian) + JSON
 /// </summary>
 public class NativeMessagingHost
 {
@@ -24,7 +24,7 @@ public class NativeMessagingHost
     }
 
     /// <summary>
-    /// Startet die Hauptschleife zum Empfangen und Verarbeiten von Nachrichten
+    /// Starts the main loop for receiving and processing messages.
     /// </summary>
     public async Task RunAsync()
     {
@@ -55,7 +55,7 @@ public class NativeMessagingHost
                 }
                 catch
                 {
-                    // Wenn auch das fehlschlaegt, beenden
+                    // If this also fails, exit
                     break;
                 }
             }
@@ -63,11 +63,11 @@ public class NativeMessagingHost
     }
 
     /// <summary>
-    /// Liest eine Nachricht aus dem stdin-Stream
+    /// Reads a message from the stdin stream.
     /// </summary>
     private async Task<NativeMessage?> ReadMessageAsync(Stream stdin)
     {
-        // Native Messaging Protokoll: 4-Byte Laenge (Little Endian) + JSON
+        // Native Messaging protocol: 4-byte length (little endian) + JSON
         var lengthBytes = new byte[4];
         var bytesRead = await stdin.ReadAsync(lengthBytes.AsMemory(0, 4));
 
@@ -76,7 +76,7 @@ public class NativeMessagingHost
 
         var length = BitConverter.ToInt32(lengthBytes, 0);
         
-        // Sicherheitspruefung
+        // Safety check
         if (length <= 0 || length > 1024 * 1024) // Max 1MB
         {
             return null;
@@ -96,7 +96,7 @@ public class NativeMessagingHost
     }
 
     /// <summary>
-    /// Schreibt eine Antwort in den stdout-Stream
+    /// Writes a response to the stdout stream.
     /// </summary>
     private async Task WriteMessageAsync(Stream stdout, NativeResponse response)
     {
@@ -110,7 +110,7 @@ public class NativeMessagingHost
     }
 
     /// <summary>
-    /// Verarbeitet eine eingehende Nachricht
+    /// Processes an incoming message.
     /// </summary>
     private async Task<NativeResponse> ProcessMessageAsync(NativeMessage message)
     {
@@ -140,13 +140,13 @@ public class NativeMessagingHost
                     return new NativeResponse
                     {
                         Success = true,
-                        Message = "Konfiguration aktualisiert"
+                        Message = "Configuration updated"
                     };
                 }
                 return new NativeResponse
                 {
                     Success = false,
-                    Error = "Kein Pfad angegeben"
+                    Error = "No path specified"
                 };
 
             case "selectfolder":
@@ -159,13 +159,13 @@ public class NativeMessagingHost
                 return new NativeResponse
                 {
                     Success = false,
-                    Error = $"Unbekannte Aktion: {message.Action}"
+                    Error = $"Unknown action: {message.Action}"
                 };
         }
     }
 
     /// <summary>
-    /// Behandelt die saveImage Aktion
+    /// Handles the saveImage action.
     /// </summary>
     private async Task<NativeResponse> HandleSaveImageAsync(NativeMessage message)
     {
@@ -174,7 +174,7 @@ public class NativeMessagingHost
             return new NativeResponse
             {
                 Success = false,
-                Error = "Keine Bild-URL angegeben"
+                Error = "No image URL specified"
             };
         }
 
@@ -189,7 +189,7 @@ public class NativeMessagingHost
             {
                 Success = true,
                 FilePath = filePath,
-                Message = "Bild erfolgreich gespeichert"
+                Message = "Image saved successfully"
             };
         }
         catch (Exception ex)
@@ -197,13 +197,13 @@ public class NativeMessagingHost
             return new NativeResponse
             {
                 Success = false,
-                Error = $"Download fehlgeschlagen: {ex.Message}"
+                Error = $"Download failed: {ex.Message}"
             };
         }
     }
 
     /// <summary>
-    /// Oeffnet einen Windows-Ordnerauswahl-Dialog via COM IFileOpenDialog
+    /// Opens a Windows folder picker dialog via COM IFileOpenDialog.
     /// </summary>
     private Task<NativeResponse> HandleSelectFolderAsync()
     {
@@ -216,19 +216,19 @@ public class NativeMessagingHost
                 _config.UpdateSaveDirectory(selectedPath);
                 return new NativeResponse { Success = true, Message = selectedPath };
             }
-            return new NativeResponse { Success = false, Error = "Abgebrochen" };
+            return new NativeResponse { Success = false, Error = "Cancelled" };
         });
     }
 
     /// <summary>
-    /// Oeffnet den aktuellen Speicherordner im Windows Explorer
+    /// Opens the current save folder in Windows Explorer.
     /// </summary>
     private NativeResponse HandleOpenFolder()
     {
         var path = _config.SaveDirectory;
         if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
         {
-            return new NativeResponse { Success = false, Error = "Ordner existiert nicht" };
+            return new NativeResponse { Success = false, Error = "Folder does not exist" };
         }
 
         try
@@ -248,7 +248,7 @@ public class NativeMessagingHost
 }
 
 /// <summary>
-/// Eingehende Nachricht von der Chrome Extension
+/// Incoming message from the Chrome Extension.
 /// </summary>
 public class NativeMessage
 {
@@ -261,7 +261,7 @@ public class NativeMessage
 }
 
 /// <summary>
-/// Ausgehende Antwort an die Chrome Extension
+/// Outgoing response to the Chrome Extension.
 /// </summary>
 public class NativeResponse
 {

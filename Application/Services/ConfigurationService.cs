@@ -3,8 +3,8 @@ using System.Text.Json;
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// Verwaltet die Konfiguration der Anwendung
-/// Speichert Einstellungen in %APPDATA%\GyazoDumper\config.json
+/// Manages the application configuration.
+/// Stores settings in %APPDATA%\GyazoDumper\config.json.
 /// </summary>
 public class ConfigurationService
 {
@@ -22,35 +22,35 @@ public class ConfigurationService
     }
 
     /// <summary>
-    /// Zielverzeichnis fuer gespeicherte Bilder
+    /// Target directory for saved images.
     /// </summary>
     public string SaveDirectory => _config.SaveDirectory;
 
     /// <summary>
-    /// Muster fuer Dateinamen
-    /// Platzhalter: {hash}, {timestamp}, {ext}
+    /// Filename pattern.
+    /// Placeholders: {hash}, {timestamp}, {ext}
     /// </summary>
     public string FileNamePattern => _config.FileNamePattern;
 
     /// <summary>
-    /// Aktualisiert das Speicherverzeichnis und die Ordnerverknuepfung in AppData
+    /// Updates the save directory and the folder shortcut in AppData.
     /// </summary>
     public void UpdateSaveDirectory(string newPath)
     {
         _config.SaveDirectory = newPath;
         SaveConfig(_config);
 
-        // Zielordner erstellen und Junction aktualisieren
+        // Create target folder and update junction
         try
         {
             Directory.CreateDirectory(newPath);
             NativeHostInstaller.UpdateFolderShortcut(newPath);
         }
-        catch { /* Nicht kritisch */ }
+        catch { /* Not critical */ }
     }
 
     /// <summary>
-    /// Laedt die Konfiguration oder erstellt Standardwerte
+    /// Loads the configuration or creates default values.
     /// </summary>
     private AppConfig LoadOrCreateConfig()
     {
@@ -67,7 +67,7 @@ public class ConfigurationService
             }
             catch
             {
-                // Bei Fehler Standardkonfiguration verwenden
+                // On error, use default configuration
             }
         }
 
@@ -77,7 +77,7 @@ public class ConfigurationService
     }
 
     /// <summary>
-    /// Erstellt eine Standardkonfiguration
+    /// Creates a default configuration.
     /// </summary>
     private static AppConfig CreateDefaultConfig()
     {
@@ -90,7 +90,7 @@ public class ConfigurationService
     }
 
     /// <summary>
-    /// Speichert die Konfiguration in die Datei
+    /// Saves the configuration to disk.
     /// </summary>
     private void SaveConfig(AppConfig config)
     {
@@ -100,7 +100,7 @@ public class ConfigurationService
 }
 
 /// <summary>
-/// Konfigurationsmodell
+/// Configuration model.
 /// </summary>
 public class AppConfig
 {

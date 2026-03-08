@@ -1,7 +1,7 @@
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// Laedt Bilder von URLs herunter und speichert sie lokal
+/// Downloads images from URLs and saves them locally.
 /// </summary>
 public class ImageDownloader
 {
@@ -17,11 +17,11 @@ public class ImageDownloader
     }
 
     /// <summary>
-    /// Laedt ein Bild von der angegebenen URL herunter und speichert es
+    /// Downloads an image from the specified URL and saves it.
     /// </summary>
-    /// <param name="imageUrl">URL des Bildes</param>
-    /// <param name="gyazoId">Gyazo ID fuer den Dateinamen</param>
-    /// <returns>Vollstaendiger Pfad zur gespeicherten Datei</returns>
+    /// <param name="imageUrl">URL of the image</param>
+    /// <param name="gyazoId">Gyazo ID for the filename</param>
+    /// <returns>Full path to the saved file</returns>
     public async Task<string> DownloadImageAsync(string imageUrl, string gyazoId)
     {
         var response = await _httpClient.GetAsync(imageUrl);
@@ -30,14 +30,14 @@ public class ImageDownloader
         var fileName = GenerateFileName(imageUrl, gyazoId);
         var savePath = Path.Combine(_config.SaveDirectory, fileName);
 
-        // Verzeichnis erstellen falls nicht vorhanden
+        // Create directory if it doesn't exist
         var directory = Path.GetDirectoryName(savePath);
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        // Bild speichern
+        // Save image
         await using var fileStream = File.Create(savePath);
         await response.Content.CopyToAsync(fileStream);
 
@@ -45,11 +45,11 @@ public class ImageDownloader
     }
 
     /// <summary>
-    /// Generiert einen Dateinamen basierend auf dem konfigurierten Muster
+    /// Generates a filename based on the configured pattern.
     /// </summary>
     private string GenerateFileName(string imageUrl, string gyazoId)
     {
-        // Dateiendung aus URL extrahieren
+        // Extract file extension from URL
         var uri = new Uri(imageUrl);
         var extension = Path.GetExtension(uri.AbsolutePath);
 

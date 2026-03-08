@@ -4,10 +4,10 @@ using System.Runtime.InteropServices;
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// Ordnerauswahl-Dialog via COM IFileOpenDialog.
-/// Ersetzt WinForms FolderBrowserDialog um die ~40 MB WinForms-Abhaengigkeit zu vermeiden.
-/// Verwendet Win32 AttachThreadInput um den Dialog aus dem Hintergrund-Prozess
-/// (Native Messaging Host) in den Vordergrund zu bringen.
+/// Folder picker dialog via COM IFileOpenDialog.
+/// Replaces WinForms FolderBrowserDialog to avoid the ~40 MB WinForms dependency.
+/// Uses Win32 AttachThreadInput to bring the dialog to the foreground
+/// from the background process (Native Messaging Host).
 /// </summary>
 internal static class FolderPicker
 {
@@ -70,9 +70,9 @@ internal static class FolderPicker
     // ========================================================================
 
     /// <summary>
-    /// Zeigt einen Ordnerauswahl-Dialog an.
-    /// Gibt den gewaehlten Pfad zurueck, oder null wenn abgebrochen.
-    /// Laeuft auf einem eigenen STA-Thread (COM-Anforderung).
+    /// Shows a folder picker dialog.
+    /// Returns the selected path, or null if cancelled.
+    /// Runs on a dedicated STA thread (COM requirement).
     /// </summary>
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FileOpenDialogClass))]
     public static string? ShowDialog(string? initialFolder = null)
@@ -82,7 +82,7 @@ internal static class FolderPicker
 
         var thread = new Thread(() =>
         {
-            // OLE/COM explizit initialisieren (noetig fuer STA-Thread ohne WinForms)
+            // Explicitly initialize OLE/COM (required for STA thread without WinForms)
             OleInitialize(IntPtr.Zero);
             try
             {
@@ -90,9 +90,9 @@ internal static class FolderPicker
 
                 dialog.GetOptions(out uint options);
                 dialog.SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
-                dialog.SetTitle("Zielordner fuer GyazoDumper auswaehlen");
+                dialog.SetTitle("Select target folder for GyazoDumper");
 
-                // Startordner setzen
+                // Set initial folder
                 if (!string.IsNullOrEmpty(initialFolder) && Directory.Exists(initialFolder))
                 {
                     var guid = IID_IShellItem;
@@ -103,7 +103,7 @@ internal static class FolderPicker
                     }
                 }
 
-                // Unsichtbares TopMost-Fenster als Owner fuer Vordergrund-Fokus
+                // Invisible TopMost window as owner for foreground focus
                 var ownerHwnd = CreateWindowExW(
                     WS_EX_TOPMOST, "STATIC", "",
                     WS_POPUP, -1, -1, 1, 1,
@@ -113,7 +113,7 @@ internal static class FolderPicker
                 ForceForeground(ownerHwnd);
                 ShowWindow(ownerHwnd, SW_HIDE);
 
-                // S_OK (0) = Benutzer hat einen Ordner gewaehlt
+                // S_OK (0) = user selected a folder
                 if (dialog.Show(ownerHwnd) == 0)
                 {
                     dialog.GetResult(out var item);
@@ -138,7 +138,7 @@ internal static class FolderPicker
         thread.Start();
         thread.Join();
 
-        // Fehler loggen falls vorhanden
+        // Log error if present
         if (threadError != null)
         {
             try
@@ -155,7 +155,7 @@ internal static class FolderPicker
     }
 
     // ========================================================================
-    //  Vordergrund erzwingen (Hintergrund-Prozess -> AttachThreadInput)
+    //  Force foreground (background process -> AttachThreadInput)
     // ========================================================================
 
     private static void ForceForeground(IntPtr hWnd)
@@ -180,7 +180,7 @@ internal static class FolderPicker
 
     // ========================================================================
     //  COM Interfaces (IFileOpenDialog, IShellItem)
-    //  Vtable-Reihenfolge muss exakt stimmen!
+    //  Vtable order must match exactly!
     // ========================================================================
 
     [ComImport, Guid("DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7")]

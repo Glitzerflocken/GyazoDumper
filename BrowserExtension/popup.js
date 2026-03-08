@@ -1,24 +1,24 @@
 /**
  * GyazoDumper - Popup Script
  * 
- * Verwaltet die Einstellungen im Popup-Menue der Extension.
- *   - Zielordner laden/speichern (Browser-Modus)
- *   - Desktop-App Modus aktivieren/deaktivieren
- *   - Desktop-App Status pruefen und Installation anbieten
- *   - Extension-ID anzeigen und kopieren (fuer Setup)
- *   - Setup-Download direkt aus dem Popup starten
- *   - Gespeicherte IDs als Textdatei exportieren (saveAs-Dialog)
- *   - Alle gespeicherten IDs loeschen (mit Bestaetigungsdialog)
- *   - Sprachumschaltung DE/EN
+ * Manages settings in the extension's popup menu.
+ *   - Load/save target folder (browser mode)
+ *   - Enable/disable Desktop App mode
+ *   - Check Desktop App status and offer installation
+ *   - Display and copy Extension ID (for setup)
+ *   - Start setup download directly from the popup
+ *   - Export saved IDs as a text file (saveAs dialog)
+ *   - Delete all saved IDs (with confirmation dialog)
+ *   - Language switching DE/EN
  */
 
-// Standard-Zielordner (Unterordner im Chrome-Download-Verzeichnis)
+// Default target folder (subfolder in the Chrome download directory)
 const DEFAULT_ZIELORDNER = "GyazoDumps";
 
-// GitHub Release URL fuer automatischen Download der Setup-Datei
+// GitHub Release URL for automatic setup download
 const SETUP_DOWNLOAD_URL = "https://github.com/Glitzerflocken/GyazoDumper/releases/latest/download/GyazoDumper-Setup.exe";
 
-// UI-Elemente
+// UI elements
 const inputZielordner = document.getElementById("inputZielordner");
 const btnSave = document.getElementById("btnSave");
 const statusEl = document.getElementById("status");
@@ -29,7 +29,7 @@ const confirmOverlay = document.getElementById("confirmOverlay");
 const btnConfirmYes = document.getElementById("btnConfirmYes");
 const btnConfirmNo = document.getElementById("btnConfirmNo");
 
-// Desktop-App UI-Elemente
+// Desktop App UI elements
 const toggleDesktopApp = document.getElementById("toggleDesktopApp");
 const desktopAppSection = document.getElementById("desktopAppSection");
 const browserZielordnerSection = document.getElementById("browserZielordnerSection");
@@ -43,12 +43,12 @@ const inputDesktopZielordner = document.getElementById("inputDesktopZielordner")
 const btnBrowseFolder = document.getElementById("btnBrowseFolder");
 const btnOpenFolder = document.getElementById("btnOpenFolder");
 
-// Sprach-Buttons
+// Language buttons
 const btnLangDe = document.getElementById("btnLangDe");
 const btnLangEn = document.getElementById("btnLangEn");
 
 // ============================================================================
-//  Sprache
+//  Language
 // ============================================================================
 
 function updateLangButtons() {
@@ -69,13 +69,13 @@ btnLangEn.addEventListener("click", () => {
 });
 
 // ============================================================================
-//  Extension-ID anzeigen
+//  Display Extension ID
 // ============================================================================
 
 extensionIdEl.textContent = chrome.runtime.id;
 
 // ============================================================================
-//  Zielordner (Browser-Modus)
+//  Target folder (browser mode)
 // ============================================================================
 
 async function loadSettings() {
@@ -87,7 +87,7 @@ async function loadSettings() {
 
         inputZielordner.value = result.zielordner || DEFAULT_ZIELORDNER;
 
-        // Desktop-App Toggle setzen
+        // Set Desktop App toggle
         const useDesktop = result.useDesktopApp || false;
         toggleDesktopApp.checked = useDesktop;
         updateDesktopAppUI(useDesktop);
@@ -96,7 +96,7 @@ async function loadSettings() {
             checkNativeHostStatus();
         }
     } catch (error) {
-        console.error("[GyazoDumper Popup] Fehler beim Laden:", error);
+        console.error("[GyazoDumper Popup] Error loading settings:", error);
         inputZielordner.value = DEFAULT_ZIELORDNER;
     }
 }
@@ -118,7 +118,7 @@ async function saveSettings() {
 }
 
 // ============================================================================
-//  Desktop-App Modus
+//  Desktop App mode
 // ============================================================================
 
 function updateDesktopAppUI(enabled) {
@@ -209,7 +209,7 @@ async function browseFolder() {
         if (response.success) {
             inputDesktopZielordner.value = response.message;
             showStatus(t("statusNewPath") + response.message);
-        } else if (response.error !== "Abgebrochen") {
+        } else if (response.error !== "Cancelled") {
             showStatus(t("statusBrowseFail"), true);
         }
     } catch (error) {
@@ -240,12 +240,12 @@ async function loadNativeConfig() {
             inputDesktopZielordner.value = response.message;
         }
     } catch (error) {
-        console.error("[GyazoDumper Popup] Config laden fehlgeschlagen:", error);
+        console.error("[GyazoDumper Popup] Failed to load config:", error);
     }
 }
 
 // ============================================================================
-//  ID-Zaehler
+//  ID counter
 // ============================================================================
 
 async function updateIdCount() {
@@ -259,7 +259,7 @@ async function updateIdCount() {
 }
 
 // ============================================================================
-//  Export: IDs als Textdatei speichern (saveAs-Dialog)
+//  Export: Save IDs as text file (saveAs dialog)
 // ============================================================================
 
 async function exportIds() {
@@ -297,7 +297,7 @@ async function exportIds() {
 }
 
 // ============================================================================
-//  Reset: Alle IDs loeschen (mit Bestaetigungsdialog)
+//  Reset: Delete all IDs (with confirmation dialog)
 // ============================================================================
 
 function showConfirmDialog() {
@@ -321,7 +321,7 @@ async function resetIds() {
 }
 
 // ============================================================================
-//  Status-Anzeige
+//  Status display
 // ============================================================================
 
 function showStatus(message, isError = false) {
@@ -335,7 +335,7 @@ function showStatus(message, isError = false) {
 }
 
 // ============================================================================
-//  Event-Listener
+//  Event listeners
 // ============================================================================
 
 btnSave.addEventListener("click", saveSettings);
@@ -347,14 +347,14 @@ btnReset.addEventListener("click", showConfirmDialog);
 btnConfirmYes.addEventListener("click", resetIds);
 btnConfirmNo.addEventListener("click", hideConfirmDialog);
 
-// Desktop-App Event-Listener
+// Desktop App event listeners
 toggleDesktopApp.addEventListener("change", toggleDesktopAppMode);
 btnInstallApp.addEventListener("click", downloadSetup);
 btnCopyId.addEventListener("click", copyExtensionId);
 btnBrowseFolder.addEventListener("click", browseFolder);
 btnOpenFolder.addEventListener("click", openFolder);
 
-// Beim Oeffnen des Popups: Sprache, Einstellungen und ID-Zaehler laden
+// On popup open: load language, settings and ID counter
 loadLanguage().then(() => {
     updateLangButtons();
     loadSettings();

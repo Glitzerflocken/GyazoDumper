@@ -31,8 +31,12 @@ public static class NativeHostInstaller
     private const string EdgeRegistryPath = @"SOFTWARE\Microsoft\Edge\NativeMessagingHosts\" + HostName;
 
     // Chrome Web Store Extension-ID (fixed since publication)
-    private const string WebStoreExtensionId = "nlpifdgajdjkmenmmbpfekfefmaancnc";
-    private const string WebStoreUrl = "https://chromewebstore.google.com/detail/gyazodumper/" + WebStoreExtensionId;
+    private const string ChromeWebStoreExtensionId = "nlpifdgajdjkmenmmbpfekfefmaancnc";
+    private const string ChromeWebStoreUrl = "https://chromewebstore.google.com/detail/gyazodumper/" + ChromeWebStoreExtensionId;
+
+    // Edge Add-ons Extension-ID (fixed since publication)
+    private const string EdgeWebStoreExtensionId = "nlpifdgajdjkmenmmbpfekfefmaancnc";
+    private const string EdgeWebStoreUrl = "https://microsoftedge.microsoft.com/addons/detail/gyazodumper/" + EdgeWebStoreExtensionId;
 
     private static string AppDataDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -106,23 +110,27 @@ public static class NativeHostInstaller
             WriteOk();
         }
 
-        // --- Step 4: Register extension ID ---
-        Console.WriteLine("  [4/7] Registering extension");
+        // --- Step 4: Register extension IDs ---
+        Console.WriteLine("  [4/7] Registering extensions");
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"        Chrome Web Store ID is already registered:");
-        Console.WriteLine($"        {WebStoreExtensionId}");
+        Console.WriteLine($"        Chrome:  {ChromeWebStoreExtensionId}");
+        Console.WriteLine($"        Edge:    {EdgeWebStoreExtensionId}");
         Console.ResetColor();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("        Register additional ID? (e.g. for development)");
+        Console.WriteLine("        Additional ID? (auto-skip in 5s)");
         Console.ResetColor();
-        Console.Write("        Input (or press Enter to skip): ");
+        Console.Write("        Input: ");
 
-        var customId = Console.ReadLine()?.Trim();
+        var customId = ReadLineWithTimeout(TimeSpan.FromSeconds(5));
         if (!string.IsNullOrEmpty(customId))
         {
             customId = customId.Replace("chrome-extension://", "").TrimEnd('/');
+        }
+        else
+        {
+            Console.WriteLine();
         }
 
         Console.Write("        Creating manifest ...                   ");
@@ -199,9 +207,13 @@ public static class NativeHostInstaller
         Console.WriteLine();
         Console.WriteLine("  Install the browser extension:");
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.Write("  • Chrome Web Store: ");
+        Console.Write("  • Chrome: ");
         Console.ResetColor();
-        Console.WriteLine(WebStoreUrl);
+        Console.WriteLine(ChromeWebStoreUrl);
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.Write("  • Edge:   ");
+        Console.ResetColor();
+        Console.WriteLine(EdgeWebStoreUrl);
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("  • Or manually via developer mode:");
@@ -213,7 +225,7 @@ public static class NativeHostInstaller
         Console.WriteLine();
 
         // Optional actions — ask both, then execute
-        Console.Write("  Open Chrome Web Store in browser? (y/n): ");
+        Console.Write("  Open Web Store in browser? (y/n): ");
         var openStore = Console.ReadLine()?.Trim().ToLower() == "y";
 
         Console.Write("  Open install folder in Explorer? (y/n): ");
@@ -227,7 +239,7 @@ public static class NativeHostInstaller
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = WebStoreUrl,
+                    FileName = ChromeWebStoreUrl,
                     UseShellExecute = true
                 });
             }
@@ -457,7 +469,7 @@ public static class NativeHostInstaller
 
     /// <summary>
     /// Creates the Native Messaging Manifest.
-    /// The Web Store extension ID is always added automatically.
+    /// Chrome and Edge Web Store extension IDs are always added automatically.
     /// An additional ID (e.g. for development) can optionally be specified.
     /// Existing origins are preserved.
     /// </summary>
@@ -465,8 +477,9 @@ public static class NativeHostInstaller
     {
         var allowedOrigins = new HashSet<string>(existingOrigins);
 
-        // Always add Web Store ID
-        allowedOrigins.Add($"chrome-extension://{WebStoreExtensionId}/");
+        // Always add Web Store IDs
+        allowedOrigins.Add($"chrome-extension://{ChromeWebStoreExtensionId}/");
+        allowedOrigins.Add($"chrome-extension://{EdgeWebStoreExtensionId}/");
 
         // Add additional ID if specified
         if (!string.IsNullOrEmpty(additionalExtensionId))
@@ -593,6 +606,19 @@ public static class NativeHostInstaller
         Console.ResetColor();
     }
 
+    /// <summary>
+    /// Reads a line from stdin with a timeout.
+    /// Returns null if the timeout expires without input.
+    /// </summary>
+    private static string? ReadLineWithTimeout(TimeSpan timeout)
+    {
+        string? result = null;
+        var readTask = Task.Run(() => result = Console.ReadLine()?.Trim());
+        if (readTask.Wait(timeout))
+            return result;
+        return null;
+    }
+
     private static void WaitAndExit()
     {
         Console.WriteLine("  Press any key to exit...");
@@ -601,7 +627,7 @@ public static class NativeHostInstaller
 }
 
 /// <summary>
-/// Native Messaging Manifest-Struktur
+/// Native Messaging Manifest structure.
 /// </summary>
 public class NativeMessagingManifest
 {

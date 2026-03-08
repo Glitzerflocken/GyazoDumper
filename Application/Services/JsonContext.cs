@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 namespace GyazoDumper.Services;
 
 /// <summary>
-/// JSON Source Generator Context - erzeugt trim-sichere Serialisierung
-/// fuer alle Modelltypen. Vermeidet Reflection-basierte JSON-Verarbeitung
-/// die beim Trimming problematisch waere.
+/// JSON Source Generator Context — produces trim-safe serialization
+/// for all model types. Avoids reflection-based JSON processing
+/// which would be problematic with trimming.
 /// </summary>
 [JsonSerializable(typeof(AppConfig))]
 [JsonSerializable(typeof(NativeMessage))]
@@ -20,7 +20,7 @@ internal partial class GyazoDumperJsonContext : JsonSerializerContext
 }
 
 /// <summary>
-/// Separater Context fuer snake_case Serialisierung (Native Messaging Manifest)
+/// Separate context for snake_case serialization (Native Messaging Manifest).
 /// </summary>
 [JsonSerializable(typeof(NativeMessagingManifest))]
 [JsonSourceGenerationOptions(

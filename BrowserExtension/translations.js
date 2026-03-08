@@ -1,14 +1,14 @@
 /**
  * GyazoDumper - Translations (i18n)
  *
- * Alle sichtbaren Texte im Popup in Deutsch und Englisch.
- * Sprache wird in chrome.storage.local gespeichert und vom Nutzer umschaltbar.
+ * All visible texts in the popup in German and English.
+ * Language is stored in chrome.storage.local and switchable by the user.
  *
- * Verwendung im HTML:
+ * Usage in HTML:
  *   <span data-i18n="key">Fallback</span>
  *   <input data-i18n-placeholder="key">
  *
- * Verwendung in JS:
+ * Usage in JS:
  *   t("key")
  */
 
@@ -162,12 +162,12 @@ const translations = {
     }
 };
 
-// Aktuelle Sprache (Default: Englisch)
+// Current language (default: English)
 let currentLang = "en";
 
 /**
- * Gibt den uebersetzten Text fuer einen Key zurueck.
- * Unterstuetzt {count} Platzhalter.
+ * Returns the translated text for a key.
+ * Supports {count} placeholders.
  */
 function t(key, replacements = {}) {
     let text = translations[currentLang]?.[key] || translations["en"]?.[key] || key;
@@ -178,8 +178,8 @@ function t(key, replacements = {}) {
 }
 
 /**
- * Wendet alle Uebersetzungen auf das DOM an.
- * Sucht nach data-i18n (innerHTML) und data-i18n-placeholder Attributen.
+ * Applies all translations to the DOM.
+ * Searches for data-i18n (innerHTML) and data-i18n-placeholder attributes.
  */
 function applyTranslations() {
     document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -198,7 +198,7 @@ function applyTranslations() {
 }
 
 /**
- * Setzt die Sprache und speichert sie.
+ * Sets the language and saves it.
  */
 async function setLanguage(lang) {
     currentLang = lang;
@@ -209,7 +209,7 @@ async function setLanguage(lang) {
 }
 
 /**
- * Laedt die gespeicherte Sprache aus dem Storage.
+ * Loads the saved language from storage.
  */
 async function loadLanguage() {
     try {

@@ -1,36 +1,36 @@
 /**
  * GyazoDumper - Content Script
  * 
- * Laeuft nur auf gyazo.com Seiten.
- * Liest den Bild-Link aus dem HTML-DOM aus und sendet ihn
- * an den Background Service Worker zum Download.
+ * Runs only on gyazo.com pages.
+ * Reads the image link from the HTML DOM and sends it
+ * to the Background Service Worker for download.
  *
- * SPA-Navigation:
- *   Gyazo verwendet history.pushState (React) wenn man per Pfeil-Tasten
- *   zwischen Bildern wechselt. Content Scripts laufen in einer isolierten
- *   Welt und koennen pushState der Haupt-Welt nicht abfangen.
- *   Daher wird URL-Polling (alle 500ms) verwendet um Navigationen zu erkennen.
+ * SPA Navigation:
+ *   Gyazo uses history.pushState (React) when navigating between
+ *   images via arrow keys. Content Scripts run in an isolated world
+ *   and cannot intercept pushState from the main world.
+ *   Therefore URL polling (every 500ms) is used to detect navigations.
  */
 
-// Regex: Prueft ob die URL eine Gyazo-Bild-Seite ist (32 hex-Zeichen nach gyazo.com/)
+// Regex: Checks if the URL is a Gyazo image page (32 hex characters after gyazo.com/)
 const GYAZO_URL_PATTERN = /^https:\/\/gyazo\.com\/([a-f0-9]{32})$/;
 
-// Letzte verarbeitete URL - verhindert doppelte Verarbeitung
+// Last processed URL — prevents duplicate processing
 let lastProcessedUrl = null;
 
-// Aktiver MutationObserver (wird bei URL-Wechsel gestoppt/neugestartet)
+// Active MutationObserver (stopped/restarted on URL change)
 let activeObserver = null;
 let activeTimeout = null;
 
 // ============================================================================
-//  SPA-Navigation erkennen (URL-Polling)
+//  Detect SPA navigation (URL polling)
 // ============================================================================
 
 /**
- * Prueft regelmaessig ob sich die URL geaendert hat.
- * Content Scripts laufen in einer isolierten Welt und koennen
- * history.pushState der Haupt-Seite (Gyazo React) nicht abfangen.
- * URL-Polling ist die zuverlaessigste Methode.
+ * Periodically checks if the URL has changed.
+ * Content Scripts run in an isolated world and cannot intercept
+ * history.pushState from the main page (Gyazo React).
+ * URL polling is the most reliable method.
  */
 setInterval(() => {
     const currentUrl = window.location.href;
@@ -39,12 +39,12 @@ setInterval(() => {
     }
 }, 500);
 
-// Browser-Zurueck/Vorwaerts (popstate feuert auch in der Content-Welt)
+// Browser back/forward (popstate also fires in the content world)
 window.addEventListener("popstate", onUrlChange);
 
 /**
- * Wird bei jeder URL-Aenderung aufgerufen.
- * Prueft ob es eine neue Gyazo-Bild-URL ist und startet den Download.
+ * Called on every URL change.
+ * Checks if it's a new Gyazo image URL and starts the download.
  */
 function onUrlChange() {
     const currentUrl = window.location.href;
@@ -52,7 +52,7 @@ function onUrlChange() {
 
     lastProcessedUrl = currentUrl;
 
-    // Vorherigen Observer/Timeout aufraumen
+    // Clean up previous observer/timeout
     if (activeObserver) {
         activeObserver.disconnect();
         activeObserver = null;
@@ -62,19 +62,19 @@ function onUrlChange() {
         activeTimeout = null;
     }
 
-    // Kurzer Delay: Bei SPA-Navigation aendert sich die URL sofort,
-    // aber das Bild-Element im DOM braucht einen Moment um zu aktualisieren
+    // Short delay: On SPA navigation the URL changes immediately,
+    // but the image element in the DOM needs a moment to update
     setTimeout(findAndSendImageUrl, 100);
 }
 
 // ============================================================================
-//  Bild-Erkennung und Download
+//  Image detection and download
 // ============================================================================
 
 /**
- * Versucht das Bild-Element im DOM zu finden und den src-Link auszulesen.
- * Bei SPA-Navigation kann das Bild kurz verzögert geladen werden,
- * daher wird ein MutationObserver als Fallback verwendet.
+ * Tries to find the image element in the DOM and read its src URL.
+ * On SPA navigation the image may load with a short delay,
+ * so a MutationObserver is used as a fallback.
  */
 function findAndSendImageUrl() {
     const currentUrl = window.location.href;
@@ -83,7 +83,7 @@ function findAndSendImageUrl() {
     if (!match) return;
 
     const gyazoId = match[1];
-    console.log(`[GyazoDumper] Gyazo-Seite erkannt! ID: ${gyazoId}`);
+    console.log(`[GyazoDumper] Gyazo page detected! ID: ${gyazoId}`);
 
     // Versuche sofort das Bild zu finden
     const imageUrl = getImageSrcFromDom();
@@ -92,8 +92,8 @@ function findAndSendImageUrl() {
         return;
     }
 
-    // Bild noch nicht im DOM -> MutationObserver starten
-    console.log("[GyazoDumper] Bild noch nicht im DOM, warte auf Laden...");
+    // Image not yet in DOM -> start MutationObserver
+    console.log("[GyazoDumper] Image not yet in DOM, waiting for load...");
 
     activeObserver = new MutationObserver((mutations, obs) => {
         const imageUrl = getImageSrcFromDom();
@@ -117,13 +117,13 @@ function findAndSendImageUrl() {
             activeObserver.disconnect();
             activeObserver = null;
         }
-        console.warn("[GyazoDumper] Timeout: Bild konnte nicht gefunden werden.");
+        console.warn("[GyazoDumper] Timeout: Image could not be found.");
     }, 15000);
 }
 
 /**
- * Sucht im DOM nach dem Bild-Element und gibt die src-URL zurueck.
- * Prueft ob die src eine gueltige Bild-URL ist (nicht die alte bei SPA-Navigation).
+ * Searches the DOM for the image element and returns the src URL.
+ * Checks if the src is a valid image URL (not a stale one from SPA navigation).
  */
 function getImageSrcFromDom() {
     const imgElement = document.querySelector(
@@ -138,10 +138,10 @@ function getImageSrcFromDom() {
 }
 
 /**
- * Sendet die gefundene Bild-URL an den Background Service Worker.
+ * Sends the found image URL to the Background Service Worker.
  */
 function sendDownloadRequest(imageUrl, gyazoId) {
-    console.log(`[GyazoDumper] Sende Download-Anfrage fuer: ${imageUrl}`);
+    console.log(`[GyazoDumper] Sending download request for: ${imageUrl}`);
 
     chrome.runtime.sendMessage(
         {
@@ -151,12 +151,12 @@ function sendDownloadRequest(imageUrl, gyazoId) {
         },
         (response) => {
             if (chrome.runtime.lastError) {
-                console.error("[GyazoDumper] Fehler beim Senden:", chrome.runtime.lastError.message);
+                console.error("[GyazoDumper] Error sending message:", chrome.runtime.lastError.message);
             } else if (response && response.success) {
                 if (response.skipped) {
-                    console.log(`[GyazoDumper] Bild bereits vorhanden, uebersprungen.`);
+                    console.log(`[GyazoDumper] Image already exists, skipped.`);
                 } else {
-                    console.log(`[GyazoDumper] Download gestartet!`);
+                    console.log(`[GyazoDumper] Download started!`);
                     showSavedBanner();
                 }
             } else {
@@ -170,7 +170,7 @@ function sendDownloadRequest(imageUrl, gyazoId) {
 //  "Picture Saved!" Banner
 // ============================================================================
 
-// CSS wird einmalig in die Seite injiziert
+// CSS is injected into the page once
 let bannerStyleInjected = false;
 
 function injectBannerStyle() {
@@ -214,8 +214,8 @@ function injectBannerStyle() {
 }
 
 /**
- * Zeigt ein kleines "Picture Saved!" Banner an.
- * Fliegt von rechts rein, blendet ein, ruht, blendet aus.
+ * Shows a small "Picture Saved!" banner.
+ * Slides in from the right, fades in, rests, fades out.
  */
 function showSavedBanner() {
     injectBannerStyle();
@@ -234,12 +234,12 @@ function showSavedBanner() {
     banner.appendChild(text);
     document.body.appendChild(banner);
 
-    // Banner nach der Animation entfernen
+    // Remove banner after animation ends
     banner.addEventListener("animationend", () => {
         banner.remove();
     });
 }
 
-// Erste Verarbeitung beim Laden der Seite
+// Initial processing on page load
 lastProcessedUrl = window.location.href;
 findAndSendImageUrl();
